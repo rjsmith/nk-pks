@@ -1,0 +1,7 @@
+<sequence>
+	<request assignment="response">
+		<verb>DELETE</verb>
+		<identifier>active:deleteAllPositions
+		</identifier>
+	</request>
+</sequence>

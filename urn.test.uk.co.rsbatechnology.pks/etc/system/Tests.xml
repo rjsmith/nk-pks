@@ -1,0 +1,8 @@
+<tests>
+  <test>
+    <id>urn:test:uk:co:rsbatechnology:pks</id>
+    <name>PKS Module Tests</name>
+    <desc>Tests for the PKS</desc>
+    <uri>res:/test/testlist.xml</uri>
+  </test>
+</tests>

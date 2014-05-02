@@ -1,0 +1,137 @@
+=Part 3: Creating The PKS Module=
+
+I was ready to start implementing something using NetKernel. Taking the example of the TicTacToe demo, I eschewed the temptation of using the New Module Wizard in favour of hand-creating the PKS module, so I had to do everything myself.
+
+==Directory==
+
+I created a directory outside of the NK5.2EE install directory to contain my own projects, and then created a further pks sub-folder under that, so I had:
+
+{literal}[install]/../project-modules/nk-pks/{/literal}
+
+I then created a root folder for my single PKS module:
+
+{literal}[install]/../project-modules/nk-pks/urn.uk.co.rsbatechnology.pks/{/literal}
+
+==Eclipse==
+
+I created a new Java Project using my chosen IDE, Eclipse, and set the above module folder is its working root directory.
+
+Following the provided [[doc:tutorial:settingup:eclipse|Setting up Eclipse]] tutorial, I added the NetKernel library to the project library list for my new Eclipse project.
+
+==Creating the module.xml==
+
+Writing the initial <code>module.xml</code> file included figuring out how to set up the diary documentation. I used Eclipse to create an empty xml file, and saved it as <code>module.xml</code> into the root folder of the new module. This is what the module.xml looked like:
+
+{xml}
+<module version="2.0">
+	<meta>
+		<identity>
+			<uri>urn:uk:co:rsbatechnology:pks</uri>
+			<version>0.0.1</version>
+		</identity>
+		<info>
+			<name>Position Keeping Module</name>
+			<description>Positions and position deltas
+			</description>
+		</info>
+	</meta>
+	<system>
+		<dynamic />
+	</system>
+	<rootspace name="PKS Position Cache Rootspace" uri="urn:uk:co:rsbatechnology:pks:position"
+		public="true">
+		<mapper>
+			<config>
+				<import>res:/uk/co/rsbatechnology/pks/positionCacheMapperConfig.xml</import>
+			</config>
+			<space>
+				<fileset>
+					<regex>res:/uk/co/rsbatechnology/pks/.*</regex>
+				</fileset>
+			</space>
+		</mapper>
+	</rootspace>
+		<rootspace uri="urn:uk:co:rsbatechnology:pks:diary">
+		<!--Declare the documentation for publication into the doc system -->
+		<fileset>
+			<regex>res:/etc/system/(Books|Docs).xml</regex>
+		</fileset>
+		<fileset>
+			<regex>res:/doc/.*</regex>
+		</fileset>
+	</rootspace>
+</module>
+{/xml}
+
+It declared a main application rootspace, <code>urn:uk:co:rsbatechnology:pks:position</code>, with a mapper overlay endpoint. I had jumped a few steps through the TicTacToe demo, and already referenced a separate mapper endpoint configuration file, <code>positionCacheMapperConfig.xml</code>, which didn't exist yet.
+
+It also declared another rootspace, <code>urn:uk:co:rsbatechnology:pks:diary</code>, which exposed the module documentation to the NetKernel documentation system (which you reading right now!).  I simply followed the clear instructions given in the [[doc:sysadmin:guide:doc:editing | Documentation Editing Guide]].
+
+==Creating the positionCacheMapperConfig.xml file==
+
+I had deferred the configuration of the mapper overlay to a separate xml file.  Before I could try registering the module with NetKernel, I assumed I had to provide a minimal valid implementation.
+
+I need to create the equivalent sub-folder structure referred to in the module.xml:
+
+{xml}
+<fileset>
+	<regex>res:/uk/co/rsbatechnology/pks/.*</regex>
+</fileset>
+{/xml}
+
+So the folder path looked like:
+
+{literal}[module root]/uk/co/rsbatechnology/pks/{/literal}
+
+Using Eclipse, I created an empty xml file, saved it into this new sub-folder with the name <code>positionCacheMapperConfig.xml</code>.
+
+==First Mapped Endpoint==
+
+OK, I now had to figure out an initial endpoint to be declared in the mapper configuration file.  At this first stage, it didnt matter if it worked or not, only that it was syntactically valid to allow the module to get registered successfully with NetKernel.
+
+I started with the following, mapping a service URI: <code>active:position</code> to a resource URI <code>res:/dummy</code>, which didn't resolve to anything in the PKS rootspace as yet...
+
+{xml}
+<config>
+	<endpoint>
+		<description>Service to retrieve a single position resource
+		</description>
+		<verbs>SOURCE</verbs>
+		<grammar>
+			<active>
+				<identifier>active:position</identifier>
+			</active>
+		</grammar>
+		<request>
+			<identifier>res:/dummy</identifier>
+		</request>
+	</endpoint>
+</config>
+{/xml}
+
+==Registering the Module with NetKernel==
+
+Finally, I created a module list xml file in the NetKernel installation <code>modules.d</code> folder:
+
+{literal}[install]/etc/modules.d/pks.xml{/literal}
+
+containing the following module list:
+
+{xml}
+<modules>
+	<module runlevel="7">../project-modules/nk-pks/urn.uk.co.rsbatechnology.pks/</module>
+</modules>
+{/xml}
+
+NetKernel picked up the PKS module, and I got the good news in the NK console output:
+
+{literal}
+I 22:16:34 ModuleManager Loading Position Keeping Module v0.0.1
+I 22:16:34 ModuleManager Commissioning Modules...
+I 22:16:34 Kernel        Initialising commissioned modules...
+I 22:16:34 Kernel        NetKernel Ready, accepting requests...
+{/literal}
+
+The NetKernel [http://localhost:1060/tools/ae/view/allModules Module Explorer] also showed my newly minted module, so I knew all was good.
+
+PKS was up and running, just not doing very much.

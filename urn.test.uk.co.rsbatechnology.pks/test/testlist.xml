@@ -1,0 +1,141 @@
+<testlist>
+	<module><uri>urn:uk:co:rsbatechnology:pks</uri></module>
+	<import>res:/org/netkernel/xml/assert/assertLibrary.xml</import>
+	<test name="Delete all persisted positions">
+		<setup>
+			<verb>SINK</verb>
+			<identifier>pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR</identifier>
+			<argument name="primary">
+				<literal type="hds">
+					<amounts>
+						<amount>
+							<type>amount1</type>
+						 	<symbol>EUR</symbol>
+						 	<value>1000.00</value>
+						</amount>
+						<amount>
+							<type>base</type>
+						 	<symbol>USD</symbol>
+						 	<value>1300.00</value>
+						</amount>
+					</amounts>
+				</literal>
+			</argument>
+		</setup>
+		<request>
+			<identifier>active:deleteAllPositions</identifier>
+			<verb>DELETE</verb>
+		</request>
+		<assert>
+			<true />
+		</assert>
+	</test>
+	<test name="Retrieve a position with active:position">
+		<setup>
+			<verb>SINK</verb>
+			<identifier>pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR</identifier>
+			<argument name="primary">
+				<literal type="hds">
+					<amounts>
+						<amount>
+							<type>amount1</type>
+						 	<symbol>EUR</symbol>
+						 	<value>1000.00</value>
+						</amount>
+						<amount>
+							<type>base</type>
+						 	<symbol>USD</symbol>
+						 	<value>1300.00</value>
+						</amount>
+					</amounts>
+				</literal>
+			</argument>
+		</setup>
+		<request>
+			<identifier>active:position</identifier>
+			<argument name="businessArea">EFX</argument>
+			<argument name="location">LDN</argument>
+			<argument name="lifecycleType">PRE_STP</argument>
+			<argument name="positionType">NET</argument>
+			<argument name="accountUUID">ef79b770-b605-11e3-a5e2-0800200c9a66</argument>
+			<argument name="positionDate">2014.03.27</argument>
+			<argument name="positionSymbol">EUR</argument>
+		</request>
+		<teardown>
+			<verb>DELETE</verb>
+			<identifier>pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR</identifier>
+		</teardown>
+		<assert>
+			<xpath>count(/position)=1</xpath>
+		</assert>
+	</test>
+	<test name="Retrieve a position with pos: shortcut alias">
+		<setup>
+			<verb>SINK</verb>
+			<identifier>pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR
+			</identifier>
+			<argument name="primary">
+				<literal type="hds">
+					<amounts>
+						<amount>
+							<type>amount1</type>
+						 	<symbol>EUR</symbol>
+						 	<value>1000.00</value>
+						</amount>
+						<amount>
+							<type>base</type>
+						 	<symbol>USD</symbol>
+						 	<value>1300.00</value>
+						</amount>
+					</amounts>
+				</literal>
+			</argument>
+		</setup>
+		<request>
+			<identifier>pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR
+			</identifier>
+		</request>
+		<teardown>
+			<verb>DELETE</verb>
+			<identifier>pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR
+			</identifier>
+		</teardown>
+		<assert>
+			<xpath>count(/position)=1</xpath>
+		</assert>
+	</test>
+	<test name="Retrieve 2 positions with active:positions service">
+		<setup>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/test/setup2positions.dpml</argument>
+		</setup>
+		<request>
+			<identifier>active:positions</identifier>
+			<argument name="positions">res:/test/request2positions-xrl.xml</argument>
+		</request>
+		<teardown>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/test/teardown2positions.dpml</argument>		
+		</teardown>
+		<assert>
+			<xpath>count(//position)=2</xpath>
+		</assert>
+	</test>
+	<test name="Retrieve all known positions with active:allPositions service">
+		<setup>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/test/setup2positions.dpml</argument>
+		</setup>
+		<request>
+			<identifier>active:allPositions</identifier>
+		</request>
+		<teardown>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/test/teardown2positions.dpml</argument>		
+		</teardown>
+		<assert>
+			<xpath>count(//identifier)=2</xpath>
+		</assert>
+	</test>
+</testlist>
+

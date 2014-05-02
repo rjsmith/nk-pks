@@ -1,0 +1,71 @@
+<module version="2.0">
+	<meta>
+		<identity>
+			<uri>urn:uk:co:rsbatechnology:pks</uri>
+			<version>0.0.1</version>
+		</identity>
+		<info>
+			<name>Position Keeping Module</name>
+			<description>Positions and position deltas
+			</description>
+		</info>
+	</meta>
+	<system>
+		<dynamic />
+	</system>
+	<rootspace name="PKS Position Cache Rootspace" uri="urn:uk:co:rsbatechnology:pks:position"
+		public="true">
+		<mapper>
+			<config>
+				<import>res:/uk/co/rsbatechnology/pks/positionCacheMapperConfig.xml</import>
+			</config>
+			<space>
+				<fileset>
+					<regex>res:/uk/co/rsbatechnology/pks/.*</regex>
+				</fileset>
+				<literal type="hds" uri="res:/dummy">
+					<position>
+						<amounts>
+							<amount>
+								<type>SETTLEMENT</type>
+							 	<symbol>EUR</symbol>
+							 	<value>1000</value>
+							</amount>
+							<amount>
+								<type>BASE</type>
+							 	<symbol>USD</symbol>
+							 	<value>1300</value>
+							</amount>
+						</amounts>
+					</position>
+				</literal>
+				<!-- Use PDS as our persistence service -->
+				<import>
+					<uri>urn:org:netkernel:mod:pds</uri>
+				</import>
+				<import>
+					<uri>urn:org:netkernel:mod:pds:rdbms:local</uri>
+				</import>
+				<!-- Literal PDS configuration -->
+				<literal type="xml" uri="res:/etc/pdsConfig.xml">
+					<config>
+						<zone>global:pks</zone>
+					</config>
+				</literal>
+				<!-- Enables active:groovy to be resolvable -->
+				<import><uri>urn:org:netkernel:lang:groovy</uri></import>
+				<!--  HRL used in active:positions service -->
+				<import><uri>urn:org:netkernel:lang:xrl</uri></import>				
+			</space>
+		</mapper>
+	</rootspace>
+		<rootspace uri="urn:uk:co:rsbatechnology:pks:diary">
+		<!--Declare the documentation for publication into the doc system -->
+		<fileset>
+			<regex>res:/etc/system/(Books|Docs).xml</regex>
+		</fileset>
+		<fileset>
+			<regex>res:/doc/.*</regex>
+		</fileset>
+	</rootspace>
+</module>

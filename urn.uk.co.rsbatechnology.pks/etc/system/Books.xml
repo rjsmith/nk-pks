@@ -1,0 +1,20 @@
+<books>
+	<book>
+		<id>book:uk:co:rsbatechnology:pks:diary</id>
+		<title>PKS Diary</title>
+		<desc>A record of work done creating my first NetKernel application, PKS</desc>
+		<author>Richard Smith</author>
+		<publisher>RSBA Technology Ltd</publisher>
+		<date>29th April 2014</date>
+		<modified/>
+		<icon>res:/doc/rsbalogo.png</icon>
+		<keywords/>
+		<toc>
+			<item id="doc:uk:co:rsbatechnology:pks:diary:title" />
+			<item id="doc:uk:co:rsbatechnology:pks:diary:part1" />
+			<item id="doc:uk:co:rsbatechnology:pks:diary:part2" />
+			<item id="doc:uk:co:rsbatechnology:pks:diary:part3" />
+			<item id="doc:uk:co:rsbatechnology:pks:diary:part4" />
+		</toc>
+	</book>
+</books>

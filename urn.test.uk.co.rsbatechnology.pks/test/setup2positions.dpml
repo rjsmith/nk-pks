@@ -1,0 +1,44 @@
+<sequence>
+	<request>
+		<verb>SINK</verb>
+		<identifier>pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR
+		</identifier>
+		<argument name="primary">
+			<literal type="hds">
+					<amounts>
+						<amount>
+							<type>amount1</type>
+						 	<symbol>EUR</symbol>
+						 	<value>1000.00</value>
+						</amount>
+						<amount>
+							<type>base</type>
+						 	<symbol>USD</symbol>
+						 	<value>1300.00</value>
+						</amount>
+					</amounts>
+			</literal>
+		</argument>
+	</request>
+	<request assignment="response">
+		<verb>SINK</verb>
+		<identifier>pos:EFX:LDN:PRE_STP:fe62b3e0-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR
+		</identifier>
+		<argument name="primary">
+			<literal type="hds">
+					<amounts>
+						<amount>
+							<type>amount1</type>
+						 	<symbol>EUR</symbol>
+						 	<value>2000.00</value>
+						</amount>
+						<amount>
+							<type>base</type>
+						 	<symbol>USD</symbol>
+						 	<value>2600.00</value>
+						</amount>
+					</amounts>
+			</literal>
+		</argument>
+	</request>
+</sequence>

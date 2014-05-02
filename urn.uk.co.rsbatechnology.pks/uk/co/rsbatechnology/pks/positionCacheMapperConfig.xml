@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<endpoint>
+		<description>Service to retrieve a single position resource
+		</description>
+		<verbs>SOURCE,DELETE,EXISTS</verbs>
+		<grammar>
+			<active>
+				<identifier>active:position</identifier>
+				<argument name="businessArea" desc="Business area partition to which position belongs" />
+				<argument name="location" desc="Owning business location of position" />
+				<argument name="lifecycleType" desc="Position transaction lifecycle type" />
+				<argument name="accountUUID" desc="Position Account UUID" />
+				<argument name="positionType" desc="Position calculation type" />
+				<argument name="positionDate" desc="Record date of position" />
+				<argument name="positionSymbol" desc="Instrument symbol of position" />
+			</active>
+		</grammar>
+		<request>
+			<identifier>pds:/pks/pos/[[arg:businessArea]]-[[arg:location]]-[[arg:lifecycleType]]-[[arg:accountUUID]]-[[arg:positionType]]-[[arg:positionDate]]-[[arg:positionSymbol]]
+			</identifier>
+		</request>
+	</endpoint>
+	<endpoint>
+		<description>Service to persist a single position resource
+		</description>
+		<verbs>SINK</verbs>
+		<grammar>
+			<active>
+				<identifier>active:position</identifier>
+				<argument name="businessArea" desc="Business area partition to which position belongs" />
+				<argument name="location" desc="Owning business location of position" />
+				<argument name="lifecycleType" desc="Position transaction lifecycle type" />
+				<argument name="accountUUID" desc="Position Account UUID" />
+				<argument name="positionType" desc="Position calculation type" />
+				<argument name="positionDate" desc="Record date of position" />
+				<argument name="positionSymbol" desc="Instrument symbol of position" />
+			</active>
+		</grammar>
+		<request>
+			<identifier>active:groovy</identifier>
+			<argument name="operator">res:/uk/co/rsbatechnology/pks/sinkPosition.groovy</argument>
+			<argument name="businessArea">arg:businessArea</argument>
+			<argument name="location">arg:location</argument>
+			<argument name="lifecycleType">arg:lifecycleType</argument>
+			<argument name="accountUUID">arg:accountUUID</argument>
+			<argument name="positionType">arg:positionType</argument>
+			<argument name="positionDate">arg:positionDate</argument>
+			<argument name="positionSymbol">arg:positionSymbol</argument>
+		</request>
+	</endpoint>
+	<endpoint>
+		<description>Shortcut alias to retrieve a single position resource
+		</description>
+		<verbs>SOURCE,SINK,DELETE,EXISTS</verbs>
+		<grammar>
+			<simple>pos:{businessArea}:{location}:{lifecycleType}:{accountUUID}:{positionType}:{positionDate}:{positionSymbol}
+			</simple>
+		</grammar>
+		<request>
+			<identifier>active:position</identifier>
+			<argument name="businessArea">arg:businessArea</argument>
+			<argument name="location">arg:location</argument>
+			<argument name="lifecycleType">arg:lifecycleType</argument>
+			<argument name="accountUUID">arg:accountUUID</argument>
+			<argument name="positionType">arg:positionType</argument>
+			<argument name="positionDate">arg:positionDate</argument>
+			<argument name="positionSymbol">arg:positionSymbol</argument>
+		</request>
+	</endpoint>
+	<endpoint>
+		<description>Service to retrieve a set of position resources given a
+			list of position identifiers
+		</description>
+		<grammar>
+			<active>
+				<identifier>active:positions</identifier>
+				<argument name="positions"
+					desc="HDR representation with positions root node, containing one or more position elements, each containing declarative request definitions for individual positions" />
+			</active>
+		</grammar>
+		<request>
+			<identifier>active:xrl2</identifier>
+			<argument name="template">arg:positions</argument>
+		</request>
+	</endpoint> 
+	<endpoint>
+		<description>Resource to retrieve IHDSNode tree of all positions</description>
+		<grammar><simple>active:allPositions</simple></grammar>
+		<request>
+			<!-- Use PDS to return set of all SINKed positions -->
+			<identifier>pds:/pks/pos/</identifier>
+		</request>
+	</endpoint>
+	<endpoint>
+		<description>Resource to delete all persisted position records</description>
+		<verbs>DELETE</verbs>
+		<grammar><simple>active:deleteAllPositions</simple></grammar>
+		<request>
+			<!-- Use PDS to return set of all SINKed positions -->
+			<identifier>pds:/pks/pos/</identifier>
+		</request>
+	</endpoint>
+</config>

@@ -1,0 +1,199 @@
+=Part 4: 1st Position Resource Model Endpoint and XUnit Tests Setup=
+
+I was now ready to start work on the first set of real endpoints in the PKS module.  The first set were simple endpoints to handle persistence and retrieval of currency positions.
+
+==The active:positions endpoint==
+
+I started by developing an endpoint to retrieve a single currency position representation, given a full list of position identity attributes.  I used a "scaffolding" sub-request, returning a dummy position representation.
+
+The '''active:positions''' endpoint in the '''positionCacheMapperConfig.xml''' got changed to this:
+
+{xml}
+	<endpoint>
+		<description>Service to retrieve a single position resource
+		</description>
+		<verbs>SOURCE,DELETE,EXISTS</verbs>
+		<grammar>
+			<active>
+				<identifier>active:position</identifier>
+				<argument name="businessArea" desc="Business area partition to which position belongs" />
+				<argument name="location" desc="Owning business location of position" />
+				<argument name="lifecycleType" desc="Position transaction lifecycle type" />
+				<argument name="accountUUID" desc="Position Account UUID" />
+				<argument name="positionType" desc="Position calculation type" />
+				<argument name="positionDate" desc="Record date of position" />
+				<argument name="positionSymbol" desc="Instrument symbol of position" />
+			</active>
+		</grammar>
+		<request>
+			<identifier>res:/dummy</identifier>
+		</request>
+	</endpoint>
+{/xml}
+
+It used an active grammar to specify the request URI (in the <code><identity>...</identity></code> element), and the list of required position identity attributes. Note that I named the "Owning Account" attribute as '''accountUUID''', implying that the value of an account attribute had to be a UUID string.  This was a carry over from the real Java PKS application on which this prototype is loosely based, and my intention was to re-visit this in a later iteration.
+
+I used the [http://localhost:1060/tools/requesttrace Request Trace Tool] to see if the modified endpoint was resolvable, by injecting the following declarative request into the '''PKS Position Cache Rootspace''' of the '''urn:uk:co:rsbatechnology:pks''' module:
+
+{xml}
+<request>
+	<identifier>active:position</identifier>
+		<argument name="businessArea">EFX</argument>
+		<argument name="location">LDN</argument >
+		<argument name="lifecycleType">PRE_STP</argument >
+		<argument name="positionType">NET</argument >
+		<argument name="accountUUID">fe62b3e0-b605-11e3-a5e2-0800200c9a66</argument >
+		<argument name="positionDate">2014.03.27</argument >
+		<argument name="positionSymbol">EUR</argument >
+</request>
+{/xml}
+
+The Resolution Trace section showed that the request had matched within the MapperOverlay space to the single endpoint.  When I clicked the Execute button, I got an error. Whoops, I still had to set up the <code>res:/dummy</code> resource.  Following the TicTacToe tutorials, I created a literal endpoint in the '''module.xml''':
+
+{xml}
+<rootspace name="...">
+		<mapper>
+			<config>
+				<import>res:/uk/co/rsbatechnology/pks/positionCacheMapperConfig.xml</import>
+			</config>
+			<space>
+				<fileset>
+					<regex>res:/uk/co/rsbatechnology/pks/.*</regex>
+				</fileset>
+				<literal type="hds" uri="res:/dummy">
+					<position>
+						<amounts>
+							<amount>
+								<type>SETTLEMENT</type>
+							 	<symbol>EUR</symbol>
+							 	<value>1000</value>
+							</amount>
+							<amount>
+								<type>BASE</type>
+							 	<symbol>USD</symbol>
+							 	<value>1300</value>
+							</amount>
+						</amounts>
+					</position>
+				</literal>
+			</space>
+		</mapper>
+</rootspace>
+{/xml}
+
+I clicked the Execute button again (after saving the changes to the '''module.xml''' file). This time, I got a response back from the request, of type HDS with this toString() representation:
+
+{literal}
+null : null
+	position : null
+		amounts : null
+			amount : null
+				type : SETTLEMENT
+				symbol : EUR
+				value : 1000
+			amount : null
+				type : BASE
+				symbol : USD
+				value : 1300
+{/literal}
+
+The '''active:position''' service endpoint was resolving and returning a valid, albeit dummy, representation.
+
+==XUnit Module Setup==
+
+With my best test-driven-development (TDD) hat on, I decided to glow in my early success, pause, and set up some NetKernel XUnit tests for my shiny new module.  Having followed the TicTacToe demo closely, I knew that defining and running XUnit tests would be critical to progressing the PKS module.
+
+I created a new module '''urn.test.uk.co.rsbatechnology.pks''', physically located in another folder alongside the main PKS module:
+
+{literal}[install]/../project-modules/nk-pks/urn.test.uk.co.rsbatechnology.pks/{/literal}
+
+The '''module.xml''' file looked like this:
+
+{xml}
+<module version="2.0">
+	<meta>
+		<identity>
+			<uri>urn:test:uk:co:rsbatechnology:pks</uri>
+			<version>0.0.1</version>
+		</identity>
+		<info>
+			<name>Test / PKS</name>
+			<description>Tests for PKS Module</description>
+		</info>
+	</meta>
+	<system>
+		<dynamic />
+	</system>
+	<rootspace>
+		<fileset>
+			<regex>res:/etc/system/Tests.xml</regex>
+		</fileset>
+		<fileset>
+			<regex>res:/test/.*</regex>
+		</fileset>
+		<import>
+			<uri>urn:uk:co:rsbatechnology:pks:position</uri>
+		</import>
+		<!-- Provides access to low-level transreptors (bytes to string) -->
+		<import><uri>urn:org:netkernel:ext:layer1</uri></import>
+	</rootspace>
+</module>
+{/xml}
+
+I added the new module to the '''<nowiki>[install]</nowiki>/etc/modules.d/pks.xml/pks.xml''' file:
+
+{xml}
+<modules>
+	<module runlevel="7">../project-modules/nk-pks/urn.uk.co.rsbatechnology.pks/</module>
+	<module runlevel="7">../project-modules/nk-pks/urn.test.uk.co.rsbatechnology.pks/</module>
+</modules>
+{/xml}
+
+OK, actually I forgot this step, and spent a merry hour figuring out why my newly minted PKS XUnit test suite didn't appear in the NetKernel XUnit page.s
+
+I created a '''Tests.xml''' file in a '''etc/system''' sub-folder path, which, via dynamic import, registers a single test file identified by the the <code>res:/test/testlist.xml</code> URI:
+
+{xml}
+<tests>
+  <test>
+    <id>urn:test:uk:co:rsbatechnology:pks</id>
+    <name>PKS Module Tests</name>
+    <desc>Tests for the PKS</desc>
+    <uri>res:/test/testlist.xml</uri>
+  </test>
+</tests>
+{/xml}
+
+Now I could create the first test definition file, '''/test/testlist.xml''', which ended up something like this (after reading and re-reading the [[doc:mod:test:guide:title|XUnit Test System]] and documentation a few times):
+
+{xml}
+<testlist>
+	<module><uri>urn:uk:co:rsbatechnology:pks</uri></module>
+	<import>res:/org/netkernel/xml/assert/assertLibrary.xml</import>
+	<test name="Retrieve a position with active:position">
+		<request>
+			<identifier>active:position</identifier>
+			<argument name="businessArea">EFX</argument>
+			<argument name="location">LDN</argument>
+			<argument name="lifecycleType">PRE_STP</argument>
+			<argument name="positionType">NET</argument>
+			<argument name="accountUUID">ef79b770-b605-11e3-a5e2-0800200c9a66</argument>
+			<argument name="positionDate">2014.03.27</argument>
+			<argument name="positionSymbol">EUR</argument>
+		</request>
+		<assert>
+			<xpath>count(/position)=1</xpath>
+		</assert>
+	</test>
+</testlist>
+{/xml}
+
+Once I had figured out I had forgotten to register the new PKS Test module (see above), I could see the [http://localhost:1060/test/exec/html/urn:test:uk:co:rsbatechnology:pks PKS Module Tests] listed in the [http://localhost:1060/test/ XUnit Tests] page in the Developer portal.  After some minor fiddling around with some invalid xml syntax, I got the green light of success when I executed the first XUnit test ... great.
+
+One thing I encountered almost immediately was the difficulty of spotting syntax or semantic errors in XML files, such as the '''module.xml'''.  I quickly learnt to keep an close eye on the NetKernel console output when it attempted to re-load the PKS or PKS Test modules after I had updated a file in Eclipse.
+
+
+
+
+
+

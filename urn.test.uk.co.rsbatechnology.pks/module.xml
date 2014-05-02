@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module version="2.0">
+	<meta>
+		<identity>
+			<uri>urn:test:uk:co:rsbatechnology:pks</uri>
+			<version>0.0.1</version>
+		</identity>
+		<info>
+			<name>Test / PKS</name>
+			<description>Tests for PKS Module</description>
+		</info>
+	</meta>
+	<system>
+		<dynamic />
+	</system>
+	<rootspace>
+		<fileset>
+			<regex>res:/etc/system/Tests.xml</regex>
+		</fileset>
+		<fileset>
+			<regex>res:/test/.*</regex>
+		</fileset>
+		<import>
+			<uri>urn:uk:co:rsbatechnology:pks:position</uri>
+		</import>
+		<import>
+			<uri>urn:org:netkernel:xml:core</uri>
+		</import>
+		<import>
+			<uri>urn:org:netkernel:lang:dpml</uri>
+		</import>
+		<!-- Provides access to low-level transreptors (bytes to string) -->
+		<import><uri>urn:org:netkernel:ext:layer1</uri></import>
+	</rootspace>
+</module>

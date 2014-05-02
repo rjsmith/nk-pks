@@ -1,0 +1,89 @@
+=Part 2: Currency Position Conceptual Resource Model=
+
+Having got the requirements out of the way, I could start work on the NetKernel PKS implementation.
+
+I had already installed NK5.2EE on my 2009 MacBook, progressed through a number of the provided tutorials and bought & scanned through the 2 NetKernel - related books available though my Safari Online account.  So I thought I knew where to start ...
+
+My initial approach was heavily influenced (some would say ''copied'') from the multi-part TicTacToe demo tutorial in the 1060Research newsletter archive (see [http://wiki.netkernel.org/wink/wiki/NetKernel/News/3/34/August_24th_2012#Resource_Oriented_Analysis_and_Design_-_Part_1 Part 1] to [http://wiki.netkernel.org/wink/wiki/NetKernel/News/3/41/October_12th_2012#Resource_Oriented_Analysis_and_Design_-_Part_8 Part 8]).  The sensible place to start seemed to be the core domain model ("resource model" in ROC - speak) for representing positions.
+
+==Currency Position Resource Model==
+
+If you have read through the [[doc:uk:co:rsbatechnology:pks:diary:part1 | Requirements]], you can see that a Currency Position consists of:
+* a list of uniquely-labelled Denominated Currency Amounts
+* a multi-valued unique identifier, which is intended to globally distinguish between every currency position we may ever want to create and store.
+
+A single Denominated Currency Amount consists of 3 attributes:
+# Amount Type Label ''(just a label, or sub-identifier)''
+# Denomination Symbol or Currency ''(a valid currency symbol)''
+# A signed currency amount value ''(a signed integer value ... our requirements state that all currency positions are held as rounded amounts to nearest whole currency unit)''
+
+A single Currency Position must never have two or more Denominated Currency Amounts with the same Amount Type Label.
+
+It seemed obvious to use the multi-valued identifier as the basis of the ''identity'' of a Currency Position resource in NK. A combination of:
+# Business Area
+# Location
+# Lifecycle Type
+# Position Type
+# Owning Account
+# Position Date
+# Position Symbol
+
+For example, a single Currency Position resource could have an identity ''CurrencyPosition(EFX,LDN,PRE_STP,OPEN,CPTY1,2014-04-29,EUR)''.
+
+We may also want to retrieve and refer to sets of individual Currency Positions, based on combinations of one or more or all of the position identity attributes, for example:
+* All Currency Positions for a given Business Area + Location + Owning Account
+* All Currency Positions for a given Business Area + Location + Lifecycle Type + Position Type
+* All Currency Positions for a given Business Area + Location + Position Type + Owning Account + Position Date
+
+==Currency Position Resource Representation==
+OK, how to physically represent a Currency Position in NetKernel?  Choices include:
+* A Java POJO <code>CurrencyPosition</code> class.
+* A XML document
+* An HDS structure ''([[doc:coremeta:hds:title | HDS]] is NetKernel's own internal efficient hierarchical data structure container)''
+
+Partly to learn more about it, I chose to try out HDS. I first sketched out this HDS structure:
+
+{literal}
+<position>
+	<@id>EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:OPEN:2014.03.27:EUR</@id>
+	<amounts>
+		<amount>
+			<type>SETTLEMENT</type>
+		 	<symbol>EUR</symbol>
+		 	<value>1000</value>
+		</amount>
+		<amount>
+			<type>BASE</type>
+		 	<symbol>USD</symbol>
+		 	<value>1300</value>
+		</amount>
+	</amounts>
+</position>
+{/literal}
+
+Note the use of the <code><@id></code> node with the concatenated list of identity values.  I was experimenting with the special support for XML transreption in HDS, to translate the <code><@id></code> node to a <code><position id="..."></code> XML attribute.  No idea if this is the right approach at this stage.  My guess was that it is useful to have the list of identity attributes represented somehow in the physical resource representation.
+
+==Currency Position Resource Services==
+
+To complete the conceptual resource model before diving into the fun bit and try to implement this in NK, was to think about the basic actions or services (or object methods, from the OO world) that I wanted.
+
+Following the TicTacToe example, I knew I needed services to:
+# Persist a single Currency Position
+# Retrieve a single Currency Position
+# Delete a single Currency Position ''(we know from the requirements that for the purposes of the PKS application itself, we only care about positions with position dates greater than or equal to today, so we need a way of removing obsolete positions)''
+
+We probably also need services that can deal with multiple Currency Positions:
+# Retrieve a subset of Currency Positions, given a list of Currency Position ''identities''
+# Retrieve the set of all Currency Positions currently being held and maintained by the PKS
+# Delete all Currency Positions ''(actually, this came in a bit later when I realised it would be very useful when writing unit tests ... see later!)''
+
+OK, quite a lot of thinking and writing, but no code written yet.  Onto to Part3!
+
+
+
+ 
+
+
+
+
+ 

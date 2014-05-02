@@ -1,0 +1,37 @@
+<docs>
+	<doc>
+		<id>doc:uk:co:rsbatechnology:pks:diary:title</id>
+		<title>PKS Diary</title>
+		<desc>A record of work done creating my first NetKernel application, PKS</desc>
+		<uri>res:/doc/diary/title.txt</uri>
+		<keywords />
+	</doc>
+	<doc>
+		<id>doc:uk:co:rsbatechnology:pks:diary:part1</id>
+		<title>Part 1: Requirements</title>
+		<desc>A summary of the business requirements of the PKS module</desc>
+		<uri>res:/doc/diary/part1.txt</uri>
+		<keywords />
+	</doc>
+	<doc>
+		<id>doc:uk:co:rsbatechnology:pks:diary:part2</id>
+		<title>Part 2: Position Conceptual Resource Model</title>
+		<desc>Thinking about the logical resource model for currency positions</desc>
+		<uri>res:/doc/diary/part2.txt</uri>
+		<keywords />
+	</doc>
+	<doc>
+		<id>doc:uk:co:rsbatechnology:pks:diary:part3</id>
+		<title>Part 3: Creating The PKS Module</title>
+		<desc>Creation of the PKS NetKernel module</desc>
+		<uri>res:/doc/diary/part3.txt</uri>
+		<keywords />
+	</doc>
+	<doc>
+		<id>doc:uk:co:rsbatechnology:pks:diary:part4</id>
+		<title>Part 4: Position Resource Model Endpoints</title>
+		<desc>Implementing the first endpoints in the currency position resource model</desc>
+		<uri>res:/doc/diary/part4.txt</uri>
+		<keywords />
+	</doc>
+</docs>

@@ -1,0 +1,21 @@
+=Diary Of First Steps With NetKernel=
+
+This book records the experience of building my first real-world application in NetKernel.
+
+It shows the steps I went through as I tried to build a Position Keeping Server module, documenting any questions, issues and insights I gained along the way.
+
+'''Richard Smith'''
+
+''[http://www.rsbatechnology.co.uk RSBA Technology Ltd]''
+
+==Background==
+
+I am an independent consulting business analyst and project manager, working in the investment banking industry for over 20 years.  Over the past decade, I have specialised in working on FX e-commerce front-office trading platforms.  I have been responsible for project management, business analysis, architecture, functional design, Java development and extensive manual and automated testing activities.
+
+I was first introduced to Peter Rogers, Tony Butterworth, NetKernel and 1060Research in March 2014 via [[www.gilb.com | Tom Gilb]].  I was immediately intrigued by the possibilities of Resource-Orientated Computing and resolved to learn more about its capabilities and qualities.
+
+After progressing through a number of the excellent tutorials and videos, I wanted to see how far I can get working on a an application loosely based on a recent real-world application I have worked on.  To help me remember what I have learnt along the way, I also decided to write up my experiences as I progressed in the form of this diary.  
+
+==The Diary==
+
+The diary is presented as a multi-part documentation book embedded in the [[Position Keeping Module | PKS]] module, in order to keep everything related to PKS under one convenient project.
