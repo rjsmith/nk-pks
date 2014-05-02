@@ -1,5 +1,7 @@
-nk-pks - Demonstration Position Keeping Server application implemented in NetKernel
-===================================================================================
+nk-pks
+======
+
+Demonstration Position Keeping Server application implemented in NetKernel
 
 (c) RSBA Technology Ltd 2014
 
@@ -40,6 +42,13 @@ It is assumed that you already have a working NK5.xSE or EE installation (the in
 	        <module runlevel="7">[RelativePathFromNKinstallToPKSinstall]/urn.uk.co.rsbatechnology.pks/</module>
 	        <module runlevel="7">[RelativePathFromNKinstallToPKSinstall]/urn.test.uk.co.rsbatechnology.pks/</module>
         </modules>
+
+## PKS Diary
+
+Once you have installed the PKS application modules into your NetKernel instance, you should be able to view the embedded PKS Diary book using this link: http://localhost:1060/book/view/book:uk:co:rsbatechnology:pks:diary/
+
+Alternatively, just type “PKS Diary” into the NetKernel Management Console portal search box.
+
 
 ## License
 
