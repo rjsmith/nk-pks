@@ -192,8 +192,53 @@ Once I had figured out I had forgotten to register the new PKS Test module (see 
 
 One thing I encountered almost immediately was the difficulty of spotting syntax or semantic errors in XML files, such as the '''module.xml'''.  I quickly learnt to keep an close eye on the NetKernel console output when it attempted to re-load the PKS or PKS Test modules after I had updated a file in Eclipse.
 
+==The pos: alias resource endpoint==
 
+Following the TicTacToe demo yet again, I wanted to create an alternative shortcut URL for accessing a Currency Position, instead of having to use the multi-attribute '''active:position''' identifier.
 
+I came up with an alias identifier that simply concatenated the position attribute values together in a known order:
 
+{literal}
+pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR
+{/literal}
+
+I defined another endpoint in the '''positionCacheMapperConfig.xml''' file that defined the shortcut URL grammar and mapped that to a sub-request to the '''active:position''' service, supplying the values of each attribute from the parsed grammar arguments:
+
+{xml}
+	<endpoint>
+		<description>Shortcut alias to retrieve a single position resource
+		</description>
+		<grammar>
+			<simple>pos:{businessArea}:{location}:{lifecycleType}:{accountUUID}:{positionType}:{positionDate}:{positionSymbol}
+			</simple>
+		</grammar>
+		<request>
+			<identifier>active:position</identifier>
+			<argument name="businessArea">arg:businessArea</argument>
+			<argument name="location">arg:location</argument>
+			<argument name="lifecycleType">arg:lifecycleType</argument>
+			<argument name="accountUUID">arg:accountUUID</argument>
+			<argument name="positionType">arg:positionType</argument>
+			<argument name="positionDate">arg:positionDate</argument>
+			<argument name="positionSymbol">arg:positionSymbol</argument>
+		</request>
+	</endpoint>
+{/xml}
+
+I created another XUnit test in the PKS Test module '''testlist.xml' file to show that the endpoint was correctly being resolved:
+
+{xml}
+	<test name="Retrieve a position with pos: shortcut alias">
+		<request>
+			<identifier>pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR
+			</identifier>
+		</request>
+		<assert>
+			<xpath>count(/position)=1</xpath>
+		</assert>
+	</test>
+{/xml}
+
+The test executed successfully.  Running the Visualiser showed that the new endpoint created a '''active:position''' sub-request with the expected argument values.  I was starting to get used to using the Visualiser to debug the sequence of requests (especially using the filter box to quickly focus on the few requests in the complete trace that I was interested in).
 
 
