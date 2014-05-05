@@ -1,0 +1,254 @@
+=Part 5: Position Persistence=
+
+To get my first XUnit tests passing, I used the '''res:/dummy''' scaffolding endpoint to return a dummy position representation. I now needed to switch this to using a persistence engine so I could extend the XUnit tests to start storing and retrieving positions.  For the purposes of this experiment, I decided to use NK's own [[doc:mod:pds:pds | Persistent Data Storage]] (PDS) subsystem with the included H2 database backend.  
+
+Fore-warned from the TicTacToe tutorials, I knew that I needed to find a '''pds:''' identity encoding scheme to use for Currency Positions so I could manipulate all the stored positions as single PDS set.  For now, I settled on the same identity scheme used in the '''pos:''' alias endpoint grammar:
+
+{literal}
+pds:/pks/pos/EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR
+{/literal}
+
+I also decided not to use the '''fpds:''' service, because there is no concept of a "default" position value if none has been explicitly supplied.  The absence of a position implies no position, instead of returning a "zero" default position (but then, which Denominated Currency Amount types would the default have?)
+
+==PDS Setup==
+Before I could modify the endpoints to use PDS, I had to set up access to the PDS module.
+
+I added these elements to the PKS Rootspace definition in the '''module.xml''' file, declaring a '''global:pks''' PDS Zone:
+
+{literal}
+
+<!-- Use PDS as our persistence service -->
+<import>
+	<uri>urn:org:netkernel:mod:pds</uri>
+</import>
+<import>
+	<uri>urn:org:netkernel:mod:pds:rdbms:local</uri>
+</import>
+<!-- Literal PDS configuration -->
+<literal type="xml" uri="res:/etc/pdsConfig.xml">
+	<config>
+		<zone>global:pks</zone>
+	</config>
+</literal>
+<!-- Enables active:groovy to be resolvable -->
+<import><uri>urn:org:netkernel:lang:groovy</uri></import>
+
+{/literal}
+
+I also added the groovy language runtime import as I guessed this was about to come in very useful.
+
+==1st Attempt: A Persistent active:position Service==
+
+My first attempt was to simply switch out the reference to the '''res:/dummy''' scaffolding resource with the pds identifier, like this:
+
+{xml}
+	<endpoint>
+		<description>Service to retrieve a single position resource
+		</description>
+		<verbs>SOURCE,SINK,DELETE,EXISTS</verbs>
+		<grammar>
+			<active>
+				<identifier>active:position</identifier>
+				<argument name="businessArea" desc="Business area partition to which position belongs" />
+				<argument name="location" desc="Owning business location of position" />
+				<argument name="lifecycleType" desc="Position transaction lifecycle type" />
+				<argument name="accountUUID" desc="Position Account UUID" />
+				<argument name="positionType" desc="Position calculation type" />
+				<argument name="positionDate" desc="Record date of position" />
+				<argument name="positionSymbol" desc="Instrument symbol of position" />
+			</active>
+		</grammar>
+		<request>
+			<identifier>pds:/pks/pos/[[arg:businessArea]]:[[arg:location]]:[[arg:lifecycleType]]:[[arg:accountUUID]]:[[arg:positionType]]:[[arg:positionDate]]:[[arg:positionSymbol]]
+			</identifier>
+		</request>
+	</endpoint>
+{/xml}
+
+Then I changed the first XUnit test to add setup and teardown steps so that it persisted (SINK), retrieved (SOURCE) and deleted (DELETE) a currency position:
+
+{literal}
+	<test name="Retrieve a position with active:position with position element">
+		<setup>
+			<verb>SINK</verb>
+			<identifier>pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR</identifier>
+			<argument name="primary">
+				<literal type="hds">
+				<position>
+					<@id>EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR</@id>
+					<amounts>
+						<amount>
+							<type>amount1</type>
+						 	<symbol>EUR</symbol>
+						 	<value>1000.00</value>
+						</amount>
+						<amount>
+							<type>base</type>
+						 	<symbol>USD</symbol>
+						 	<value>1300.00</value>
+						</amount>
+					</amounts>
+				</position>
+				</literal>
+			</argument>
+		</setup>
+		<request>
+			<identifier>active:position</identifier>
+			<argument name="businessArea">EFX</argument>
+			<argument name="location">LDN</argument>
+			<argument name="lifecycleType">PRE_STP</argument>
+			<argument name="positionType">NET</argument>
+			<argument name="accountUUID">ef79b770-b605-11e3-a5e2-0800200c9a66</argument>
+			<argument name="positionDate">2014.03.27</argument>
+			<argument name="positionSymbol">EUR</argument>
+		</request>
+		<teardown>
+			<verb>DELETE</verb>
+			<identifier>pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR</identifier>
+		</teardown>
+		<assert>
+			<xpath>count(/position)=1</xpath>
+		</assert>
+	</test>
+{/literal} 
+
+However, when I ran this, I got an error:
+
+{literal}
+org.xml.sax.SAXParseException
+The content of elements must consist of well-formed character data or markup.
+{/literal}
+
+<blockquote>
+It seems that the NK standard declarative request syntax <code><nowiki><literal type="hds"> ... </literal></nowiki></code> does not allow use of node names with HDS-valid '''@''' prefixes (because the whole request declaration is being parsed as XML first?). Interestingly, this also seems to apply to the NK wiki '''xml''' built-in macro, because the NK console log reports a <code>SystemId Unknown; Line #7; Column #2; The markup in the document following the root element must be well-formed.</code> error when trying to render the xml block above!
+</blockquote>
+
+So, I had a choice: either re-factor the resource model to change the <code><@id></code> element to simply <code><id></code>, or try a different approach. Also, I wanted the persist service to take in the <code><amounts></code> element instead of an entire position record; it should build the <code><id></code> element from the position identity attributes.
+
+==2nd Attempt: A Persistent active:position Service==
+
+I decided to write a groovy script that would handle position persistence, building the <code><id></code> element from the provided position identities.  There would be two endpoints for the '''active:position''' service URL:
+* One that queries (SOURCE), deletes (DELETE) and checks for existence (EXISTS), mapping directly to the '''pds:''' scheme URL
+* One that saves (SINK) position record, given a primary argument containing the HDS representation of the <code><amounts></code> node.
+
+The '''positionCacheMapperConfig.xml''' was changed to split out these two endpoints: both using the same grammar other than the request verbs:
+
+{xml}
+<config>
+	<endpoint>
+		<description>Service to retrieve a single position resource
+		</description>
+		<verbs>SOURCE,DELETE,EXISTS</verbs>
+		<grammar>
+			<active>
+				<identifier>active:position</identifier>
+				<argument name="businessArea" desc="Business area partition to which position belongs" />
+				<argument name="location" desc="Owning business location of position" />
+				<argument name="lifecycleType" desc="Position transaction lifecycle type" />
+				<argument name="accountUUID" desc="Position Account UUID" />
+				<argument name="positionType" desc="Position calculation type" />
+				<argument name="positionDate" desc="Record date of position" />
+				<argument name="positionSymbol" desc="Instrument symbol of position" />
+			</active>
+		</grammar>
+		<request>
+			<identifier>pds:/pks/pos/[[arg:businessArea]]:[[arg:location]]:[[arg:lifecycleType]]:[[arg:accountUUID]]:[[arg:positionType]]:[[arg:positionDate]]:[[arg:positionSymbol]]
+			</identifier>
+		</request>
+	</endpoint>
+	<endpoint>
+		<description>Service to persist a single position resource
+		</description>
+		<verbs>SINK</verbs>
+		<grammar>
+			<active>
+				<identifier>active:position</identifier>
+				<argument name="businessArea" desc="Business area partition to which position belongs" />
+				<argument name="location" desc="Owning business location of position" />
+				<argument name="lifecycleType" desc="Position transaction lifecycle type" />
+				<argument name="accountUUID" desc="Position Account UUID" />
+				<argument name="positionType" desc="Position calculation type" />
+				<argument name="positionDate" desc="Record date of position" />
+				<argument name="positionSymbol" desc="Instrument symbol of position" />
+			</active>
+		</grammar>
+		<request>
+			<identifier>active:groovy</identifier>
+			<argument name="operator">res:/uk/co/rsbatechnology/pks/sinkPosition.groovy</argument>
+			<argument name="businessArea">arg:businessArea</argument>
+			<argument name="location">arg:location</argument>
+			<argument name="lifecycleType">arg:lifecycleType</argument>
+			<argument name="accountUUID">arg:accountUUID</argument>
+			<argument name="positionType">arg:positionType</argument>
+			<argument name="positionDate">arg:positionDate</argument>
+			<argument name="positionSymbol">arg:positionSymbol</argument>
+		</request>
+	</endpoint>
+</config>
+{/xml}
+
+I then created a new '''sinkPosition.groovy''' script, which had to build a full currency position HDS resource representation:
+
+{java}
+import org.netkernel.layer0.representation.*
+import org.netkernel.layer0.representation.impl.*;
+
+POSITION_IDENTIFIER_DELIMITER = ":"
+
+businessArea = context.getThisRequest().getArgumentValue("businessArea")
+location = context.getThisRequest().getArgumentValue("location")
+lifecycleType = context.getThisRequest().getArgumentValue("lifecycleType")
+accountUUID = context.getThisRequest().getArgumentValue("accountUUID")
+positionType = context.getThisRequest().getArgumentValue("positionType")
+positionDate = context.getThisRequest().getArgumentValue("positionDate")
+positionSymbol = context.getThisRequest().getArgumentValue("positionSymbol")
+
+IHDSNode positionAmounts = context.sourcePrimary(IHDSNode.class)
+IHDSNode firstAmountsNode = positionAmounts.getFirstNode("/amounts")
+// TODO: Check if null, throw exception
+
+positionIdentifier = businessArea+POSITION_IDENTIFIER_DELIMITER+location+POSITION_IDENTIFIER_DELIMITER+lifecycleType+POSITION_IDENTIFIER_DELIMITER+accountUUID+POSITION_IDENTIFIER_DELIMITER+positionType+POSITION_IDENTIFIER_DELIMITER+positionDate+POSITION_IDENTIFIER_DELIMITER+positionSymbol
+
+
+// Create HDS structure
+b = new HDSBuilder()
+b.pushNode("position")
+b.addNode("@id", positionIdentifier)
+b.importNode(firstAmountsNode)
+
+// Use PDS to SINK position node
+context.sink("pds:/pks/pos/"+positionIdentifier, b.getRoot())
+{/java}
+
+==Position Persistence XUnit Tests==
+
+I had a possible solution; I now had to create some XUnit tests to ensure this split endpoint approach was successfull.
+
+I modified the first persistence unit test shown above to remove the <code><position></code> and <code><@id></code> from the primary argument literal HDS example:
+
+{xml}
+		<setup>
+			<verb>SINK</verb>
+			<identifier>pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR</identifier>
+			<argument name="primary">
+				<literal type="hds">
+					<amounts>
+						<amount>
+							<type>amount1</type>
+						 	<symbol>EUR</symbol>
+						 	<value>1000.00</value>
+						</amount>
+						<amount>
+							<type>base</type>
+						 	<symbol>USD</symbol>
+						 	<value>1300.00</value>
+						</amount>
+					</amounts>
+				</literal>
+			</argument>
+		</setup>
+{/xml}
+
+This time, the test ran successfully.  It could SINK a position record, then SOURCE it, asserting that the retrieved position representation included a <code>position</code> node (showing that the '''sinkPosition.groovy''' script was building a full position HDS structure correctly).
+
+

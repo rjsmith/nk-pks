@@ -17,7 +17,7 @@
 			</active>
 		</grammar>
 		<request>
-			<identifier>pds:/pks/pos/[[arg:businessArea]]-[[arg:location]]-[[arg:lifecycleType]]-[[arg:accountUUID]]-[[arg:positionType]]-[[arg:positionDate]]-[[arg:positionSymbol]]
+			<identifier>pds:/pks/pos/[[arg:businessArea]]:[[arg:location]]:[[arg:lifecycleType]]:[[arg:accountUUID]]:[[arg:positionType]]:[[arg:positionDate]]:[[arg:positionSymbol]]
 			</identifier>
 		</request>
 	</endpoint>

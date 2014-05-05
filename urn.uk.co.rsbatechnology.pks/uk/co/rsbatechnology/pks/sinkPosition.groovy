@@ -16,9 +16,8 @@
 
 import org.netkernel.layer0.representation.*
 import org.netkernel.layer0.representation.impl.*;
-import org.w3c.dom.Document;
 
-POSITION_IDENTIFIER_DELIMITER = "-"
+POSITION_IDENTIFIER_DELIMITER = ":"
 
 businessArea = context.getThisRequest().getArgumentValue("businessArea")
 location = context.getThisRequest().getArgumentValue("location")

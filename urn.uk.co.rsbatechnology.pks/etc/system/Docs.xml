@@ -34,4 +34,11 @@
 		<uri>res:/doc/diary/part4.txt</uri>
 		<keywords />
 	</doc>
+	<doc>
+		<id>doc:uk:co:rsbatechnology:pks:diary:part5</id>
+		<title>Part 5: Position Persistence</title>
+		<desc>Using NK PDS to persist currency positions</desc>
+		<uri>res:/doc/diary/part5.txt</uri>
+		<keywords />
+	</doc>
 </docs>

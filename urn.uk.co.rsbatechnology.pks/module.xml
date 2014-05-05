@@ -17,7 +17,7 @@
 		public="true">
 		<mapper>
 			<config>
-				<import>res:/uk/co/rsbatechnology/pks/positionCacheMapperConfig.xml</import>
+				<import>res:/uk/co/rsbatechnology/pks/positionCacheMapperConfig_v1.xml</import>
 			</config>
 			<space>
 				<fileset>
