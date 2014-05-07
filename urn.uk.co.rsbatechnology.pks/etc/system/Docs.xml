@@ -41,4 +41,11 @@
 		<uri>res:/doc/diary/part5.txt</uri>
 		<keywords />
 	</doc>
+	<doc>
+		<id>doc:uk:co:rsbatechnology:pks:diary:part6</id>
+		<title>Part 6: Position Composite Resources</title>
+		<desc>Provide endpoints to query multiple positions</desc>
+		<uri>res:/doc/diary/part6.txt</uri>
+		<keywords />
+	</doc>
 </docs>

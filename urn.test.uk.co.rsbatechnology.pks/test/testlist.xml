@@ -134,7 +134,7 @@
 			<argument name="operator">res:/test/teardown2positions.dpml</argument>		
 		</teardown>
 		<assert>
-			<xpath>count(//identifier)=2</xpath>
+			<xpath>count(//position)=2</xpath>
 		</assert>
 	</test>
 </testlist>

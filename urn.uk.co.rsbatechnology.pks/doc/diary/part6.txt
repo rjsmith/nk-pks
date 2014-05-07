@@ -1,0 +1,301 @@
+=Part 6 - Position Composite Resources=
+
+The first endpoints could handle persistence and querying a single position resource.  I wanted to extend this to handle multiple positions, to provide a composite resource containing a set or list of positions.
+
+==The active:positions endpoint==
+
+I wanted to create a service that would retrieve a list of positions, given a list of complete position identifiers.  The first issue was how to pass in a list of identifiers to the endpoint for retrieval?  The TicTacToe demo created composite resource URLs of the form:
+
+{literal}
+cells{c:0:0,c:0:1}
+{/literal}
+
+So, an equivalent approach for positions might look something like:
+
+{literal}
+positions{pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR,pos:EFX:LDN:PRE_STP:fe62b3e0-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR}
+{/literal}
+
+This felt ''unwieldy'' to me, because of the physical length of each position identifier, even in this shortcut form.  I do not know if it is considered good or bad NetKernel practise to have potentially very long resource URLs.
+
+I decided to try a different approach, which also gave me the chance to experiment with using NetKernel's recursive XML language, [[doc:lang:xrl:title | XRL]].  The idea was to create a '''active:positions''' endpoint which would use the XRL2 runtime to process a request argument containing a XRL document which specified the list of position identifiers to be retrieved.
+
+First, I defined the new '''active:positions''' endpoint in the '''positionCacheMapperConfig.xml''' file:
+
+{xml}
+	<endpoint>
+		<description>Service to retrieve a set of position resources given a
+			list of position identifiers
+		</description>
+		<grammar>
+			<active>
+				<identifier>active:positions</identifier>
+				<argument name="positions"
+					desc="HDR representation with positions root node, containing one or more position elements, each containing declarative request definitions for individual positions" />
+			</active>
+		</grammar>
+		<request>
+			<identifier>active:xrl2</identifier>
+			<argument name="template">arg:positions</argument>
+		</request>
+	</endpoint> 
+{/xml}
+
+After reading through the XRL documentation, I devised an example XRL document which I then needed to try out in a XUnit test (see below). I declared a <code><positions> ... </positions></code> root node (to hold the expected list of <code><position></code> representations) I used the [[doc:lang:xrl:include | <xrl:include>]] directive which would be replaced with the returned position node tree.  The example below shows use of both the '''active:position''' and the alias '''pos:''' URLs, to demonstrate that either would work in this way.
+
+{xml}
+<positions xmlns:xrl="http://netkernel.org/xrl">
+	<xrl:include>
+		<xrl:identifier>pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR
+		</xrl:identifier>
+		<xrl:async>true</xrl:async>
+	</xrl:include>
+	<xrl:include>
+		<xrl:identifier>active:position</xrl:identifier>
+		<xrl:async>true</xrl:async>
+		<xrl:argument name="businessArea">EFX</xrl:argument>
+		<xrl:argument name="location">LDN</xrl:argument>
+		<xrl:argument name="lifecycleType">PRE_STP</xrl:argument>
+		<xrl:argument name="positionType">NET</xrl:argument>
+		<xrl:argument name="accountUUID">fe62b3e0-b605-11e3-a5e2-0800200c9a66</xrl:argument>
+		<xrl:argument name="positionDate">2014.03.27</xrl:argument>
+		<xrl:argument name="positionSymbol">EUR</xrl:argument>
+	</xrl:include>
+</positions>
+{/xml}
+
+For the XUnit test, I needed to set up 2 positions so that the test could call the '''active:positions''' endpoint and then assert that it got back 2 positions.  I got stuck for a while, trying to figure out how to define a test <code><setup></code> that could do multiple actions (in this case, SINK two different positions).  Eventually, after some more reading, I created a setup script using NetKernel's [[doc:lang:dpml:title | Declarative-Request Markup Language]], using its ability to sequence multiple requests:
+
+{xml}
+<sequence>
+	<request>
+		<verb>SINK</verb>
+		<identifier>pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR
+		</identifier>
+		<argument name="primary">
+			<literal type="hds">
+					<amounts>
+						<amount>
+							<type>amount1</type>
+						 	<symbol>EUR</symbol>
+						 	<value>1000</value>
+						</amount>
+						<amount>
+							<type>base</type>
+						 	<symbol>USD</symbol>
+						 	<value>1300</value>
+						</amount>
+					</amounts>
+			</literal>
+		</argument>
+	</request>
+	<request assignment="response">
+		<verb>SINK</verb>
+		<identifier>pos:EFX:LDN:PRE_STP:fe62b3e0-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR
+		</identifier>
+		<argument name="primary">
+			<literal type="hds">
+					<amounts>
+						<amount>
+							<type>amount1</type>
+						 	<symbol>EUR</symbol>
+						 	<value>2000</value>
+						</amount>
+						<amount>
+							<type>base</type>
+						 	<symbol>USD</symbol>
+						 	<value>2600</value>
+						</amount>
+					</amounts>
+			</literal>
+		</argument>
+	</request>
+</sequence>
+{/xml} 
+
+Similarly, I created another DPML script, this time to delete both these positions, to be used for the test <code><teardown></code>.  The test itself looked like this (note the <code><assert></code> statement checking for TWO position nodes):
+
+{xml}
+	<test name="Retrieve 2 positions with active:positions service">
+		<setup>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/test/setup2positions.dpml</argument>
+		</setup>
+		<request>
+			<identifier>active:positions</identifier>
+			<argument name="positions">res:/test/request2positions-xrl.xml</argument>
+		</request>
+		<teardown>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/test/teardown2positions.dpml</argument>		
+		</teardown>
+		<assert>
+			<xpath>count(//position)=2</xpath>
+		</assert>
+	</test>
+{/xml}
+
+I had defined a test using DPML scripts to handle setup and teardown.  Alternatively, I could have created the scripts and called the '''active:groovy''' runtime instead (or, indeed, any of the other runtimes provided in NK).  
+
+==The active:allPositions endpoint==
+
+To complete the first set of position resource model endpoints, I added two further endpoints that would retrieve and delete all persisted positions.  Both relied on the ability of NK's PDS to act on ''sets'':
+
+{xml}
+	<endpoint>
+		<description>Resource to retrieve IHDSNode tree of all positions</description>
+		<verbs>SOURCE</verbs>
+		<grammar><simple>active:allPositions</simple></grammar>
+		<request>
+			<!-- Use PDS to return set of all SINKed positions -->
+			<identifier>pds:/pks/pos/</identifier>
+		</request>
+	</endpoint>
+	<endpoint>
+		<description>Resource to delete all persisted position records</description>
+		<verbs>DELETE</verbs>
+		<grammar><simple>active:deleteAllPositions</simple></grammar>
+		<request>
+			<!-- Use PDS to return set of all SINKed positions -->
+			<identifier>pds:/pks/pos/</identifier>
+		</request>
+	</endpoint>
+{/xml}
+ 
+The '''active:allPositions''' service endpoint returns a list of the PDS identifiers, for example:
+
+{xml}
+<set xmlns:hds="http://netkernel.org/hds">
+	<identifier>pds:/pks/pos/EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR</identifier>
+	<identifier>pds:/pks/pos/EFX:LDN:PRE_STP:fe62b3e0-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR</identifier>
+</set>
+{/xml}
+
+This only gave a list of identified persisted records in the PDS '''/pks/pos/''' set.  But, the ''active:allPositions''' endpoint is supposed to return a representation of the actual position records, not just their identity.  How to turn the list of <code><identity></code> values into a HDS structure containing the full set of positions?  
+
+I needed to transform the <code><set> ... </set></code> XML representation returned from PDS into a dynamic XRL script which could be passed to the '''active:positions''' endpoint ... something like this:
+
+{xml}
+<positions xmlns:xrl="http://netkernel.org/xrl">
+	<xrl:include>
+		<xrl:identifier>pos:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR
+		</xrl:identifier>
+		<xrl:async>true</xrl:async>
+	</xrl:include>
+	<xrl:include>
+		<xrl:identifier>pos:EFX:LDN:PRE_STP:fe62b3e0-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EURR
+		</xrl:identifier>
+		<xrl:async>true</xrl:async>
+	</xrl:include>
+</positions>
+{/xml}
+
+I installed the {search}saxon{/search} package in order to use the latest and greatest XSLT2 syntax, and quickly came up with a simple xsl script which I saved in the '''/uk/co/rsbatechnology/pks/allPositionsTransform.xsl''' file:
+
+{xml}
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xrl="http://netkernel.org/xrl" version="2.0">
+  <xsl:output method="xml" />
+  <xsl:template match="/set">
+  <positions>
+  <xsl:for-each select="identifier">
+  	<xrl:include>
+  		<xrl:identifier><xsl:value-of select="." /></xrl:identifier>
+  		<xrl:async>true</xrl:async>
+  	</xrl:include>
+  </xsl:for-each>
+  </positions>
+  </xsl:template>
+</xsl:stylesheet>
+{/xml}
+
+I tested this separately with an example <code><set>...</set></code> document, copied it into the mapper config for the '''active:allPositions''' endpoint, and then wrapped that in a request to the '''active:xrl2''' XRL2 runtime accessor endpoint URL.  
+
+{xml}
+	<endpoint>
+		<description>Resource to retrieve tree of all positions</description>
+		<verbs>SOURCE</verbs>
+		<grammar><simple>active:allPositions</simple></grammar>
+		<request>
+			<identifier>active:xrl2</identifier>
+			<argument name="template">
+				<request>
+					<identifier>active:xslt2</identifier>
+					<argument name="operator">res:/uk/co/rsbatechnology/pks/allPositionsTransform.xsl</argument>
+					<argument name="operand">
+						<request>
+							<identifier>pds:/pks/pos/</identifier>
+						</request>
+					</argument>
+				</request>
+			</argument>
+		</request>
+	</endpoint>
+{/xml}
+
+I changed the <code><assert></code> on the relevant XUnit test to check the number of <code><position></code> nodes, instead of the number of <code><identifier></code> nodes, and executed it.  It worked .. this was the output:
+
+{xml}
+<positions>
+	<position xmlns:hds="http://netkernel.org/hds" id="EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR">
+		<amounts>
+			<amount>
+				<type>amount1</type>
+				<symbol>EUR</symbol>
+				<value>1000.00</value>
+			</amount>
+			<amount>
+				<type>base</type>
+				<symbol>USD</symbol>
+				<value>1300.00</value>
+			</amount>
+		</amounts>
+	</position>
+	<position xmlns:hds="http://netkernel.org/hds" id="EFX:LDN:PRE_STP:fe62b3e0-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR">
+<amounts>
+<amount>
+<type>amount1</type>
+<symbol>EUR</symbol>
+<value>2000.00</value>
+</amount>
+<amount>
+<type>base</type>
+<symbol>USD</symbol>
+<value>2600.00</value>
+</amount>
+</amounts>
+</position>
+</positions>
+{/xml}
+
+Finally, having read the advice about not using nested pass-by-request arguments [[doc:logicalreference:module:standard:logical:declarative:request:syntax#argument | here]], I re-factored the endpoint to use a separate DPML file, to ensure maximum cacheability. This just meant creating a new '''allPositions.dpml''' file, copying and pasting the nested <code><request></code> structure in, and wrapping in a <code><sequence>...</sequence></code> element.
+
+When I ran the [http://localhost:1060/test/exec/html/urn:test:uk:co:rsbatechnology:pks?index=5 | XUnit test] and used the Visualiser to inspect the details, I saw that:
+* the request to '''active:AllPositions''' was taking 82 milliseconds
+* the nested request to '''active:xrl2''' was taking 79 milliseconds
+* the nested request to '''active:xslt2''' was taking 75 milliseconds
+* the nested request to AnythingToXdmNode to transrept HDS node to XdmNode, made by the XSLT2Accessor took 69 milliseconds.
+
+<blockquote>
+I don't know why this transreption took so long. The request showed it issued 194 sub-requests as it searched for a matching transreption (XML to HDS).  Also, I don't know whether this would be a problem in a real system: once the XML to HDS transreptor endpoint had been resolved, subsequent calls should used the resolution cache?
+</blockquote>
+
+==The active:deleteAllPositions==
+
+To complete the initial position resource model, I created a further endpoint that called through to the underlying '''pds:''' space to delete all positions in the cache.  If nothing else, this was useful for tearing down XUnit tests.
+
+{xml}
+	<endpoint>
+		<description>Resource to delete all persisted position records</description>
+		<verbs>DELETE</verbs>
+		<grammar><simple>active:deleteAllPositions</simple></grammar>
+		<request>
+			<!-- Use PDS to return set of all SINKed positions -->
+			<identifier>pds:/pks/pos/</identifier>
+		</request>
+	</endpoint>
+{/xml}
+
+I constrained the endpoint grammar so that it would only match with '''DELETE''' - verb requests.
+
+
+

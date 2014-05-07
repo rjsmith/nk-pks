@@ -43,6 +43,7 @@ It is assumed that you already have a working NK5.xSE or EE installation (the in
 	        <module runlevel="7">[RelativePathFromNKinstallToPKSinstall]/urn.test.uk.co.rsbatechnology.pks/</module>
         </modules>
 
+You will also need to install the **xml-saxon** package from the Apposite repository, as some of the endpoints use XSLT2
 ## PKS Diary
 
 Once you have installed the PKS application modules into your NetKernel instance, you should be able to [view the embedded PKS Diary book](http://localhost:1060/book/view/book:uk:co:rsbatechnology:pks:diary/)

@@ -17,7 +17,7 @@
 		public="true">
 		<mapper>
 			<config>
-				<import>res:/uk/co/rsbatechnology/pks/positionCacheMapperConfig_v1.xml</import>
+				<import>res:/uk/co/rsbatechnology/pks/positionCacheMapperConfig.xml</import>
 			</config>
 			<space>
 				<fileset>
@@ -54,8 +54,11 @@
 				</literal>
 				<!-- Enables active:groovy to be resolvable -->
 				<import><uri>urn:org:netkernel:lang:groovy</uri></import>
-				<!--  HRL used in active:positions service -->
+				<!--  XRL used in active:positions service -->
 				<import><uri>urn:org:netkernel:lang:xrl</uri></import>				
+				<!--  XSLT2 used in active:allPositions service -->
+				<import><uri>urn:org:netkernel:xml:saxon</uri></import>				
+				<import><uri>urn:org:netkernel:lang:dpml</uri></import>
 			</space>
 		</mapper>
 	</rootspace>

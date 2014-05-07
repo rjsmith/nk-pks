@@ -10,12 +10,14 @@
 		<icon>res:/doc/rsbalogo.png</icon>
 		<keywords/>
 		<toc>
-			<item id="doc:uk:co:rsbatechnology:pks:diary:title" />
-			<item id="doc:uk:co:rsbatechnology:pks:diary:part1" />
-			<item id="doc:uk:co:rsbatechnology:pks:diary:part2" />
-			<item id="doc:uk:co:rsbatechnology:pks:diary:part3" />
-			<item id="doc:uk:co:rsbatechnology:pks:diary:part4" />
-			<item id="doc:uk:co:rsbatechnology:pks:diary:part5" />
+			<item id="doc:uk:co:rsbatechnology:pks:diary:title">
+				<item id="doc:uk:co:rsbatechnology:pks:diary:part1" />
+				<item id="doc:uk:co:rsbatechnology:pks:diary:part2" />
+				<item id="doc:uk:co:rsbatechnology:pks:diary:part3" />
+				<item id="doc:uk:co:rsbatechnology:pks:diary:part4" />
+				<item id="doc:uk:co:rsbatechnology:pks:diary:part5" />
+				<item id="doc:uk:co:rsbatechnology:pks:diary:part6" />
+			</item>
 		</toc>
 	</book>
 </books>

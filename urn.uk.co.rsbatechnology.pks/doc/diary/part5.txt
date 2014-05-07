@@ -222,7 +222,7 @@ context.sink("pds:/pks/pos/"+positionIdentifier, b.getRoot())
 
 ==Position Persistence XUnit Tests==
 
-I had a possible solution; I now had to create some XUnit tests to ensure this split endpoint approach was successfull.
+I had a possible solution; I now had to create some XUnit tests to ensure this split endpoint approach was successful.
 
 I modified the first persistence unit test shown above to remove the <code><position></code> and <code><@id></code> from the primary argument literal HDS example:
 

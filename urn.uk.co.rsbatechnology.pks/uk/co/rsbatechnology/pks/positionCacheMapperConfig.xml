@@ -85,11 +85,12 @@
 		</request>
 	</endpoint> 
 	<endpoint>
-		<description>Resource to retrieve IHDSNode tree of all positions</description>
+		<description>Resource to retrieve tree of all positions</description>
+		<verbs>SOURCE</verbs>
 		<grammar><simple>active:allPositions</simple></grammar>
 		<request>
-			<!-- Use PDS to return set of all SINKed positions -->
-			<identifier>pds:/pks/pos/</identifier>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/uk/co/rsbatechnology/pks/allPositions.xml</argument>
 		</request>
 	</endpoint>
 	<endpoint>
