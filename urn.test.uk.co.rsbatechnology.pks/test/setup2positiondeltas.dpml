@@ -1,5 +1,9 @@
 <sequence>
-	<request>
+	<request assignment="response">
+		<verb>DELETE</verb>
+		<identifier>active:deleteAllPositionDeltas</identifier>
+	</request>
+	<request assignment="response">
 		<verb>SINK</verb>
 		<identifier>active:positionDelta</identifier>
 		<argument name="businessArea"><literal type="string">EFX</literal></argument>

@@ -4,14 +4,14 @@
 		<setup>
 			<verb>SINK</verb>
 			<identifier>active:positionDelta</identifier>
-			<argument name="businessArea">EFX</argument>
-			<argument name="location">LDN</argument>
-			<argument name="lifecycleType">PRE_STP</argument>
-			<argument name="positionType">NET</argument>
-			<argument name="accountUUID">ef79b770-b605-11e3-a5e2-0800200c9a66</argument>
-			<argument name="positionDate">2014.03.27</argument>
-			<argument name="positionSymbol">EUR</argument>
-			<argument name="deltaSequence">1399554731345</argument>
+			<argument name="businessArea"><literal type="string">EFX</literal></argument>
+			<argument name="location"><literal type="string">LDN</literal></argument>
+			<argument name="lifecycleType"><literal type="string">PRE_STP</literal></argument>
+			<argument name="positionType"><literal type="string">NET</literal></argument>
+			<argument name="accountUUID"><literal type="string">ef79b770-b605-11e3-a5e2-0800200c9a66</literal></argument>
+			<argument name="positionDate"><literal type="string">2014.03.27</literal></argument>
+			<argument name="positionSymbol"><literal type="string">EUR</literal></argument>
+			<argument name="deltaSequence"><literal type="string">1399554731345</literal></argument>
 			<argument name="sourceTransaction">
 				<literal type="hds">
 					<sourceTransaction>
@@ -41,18 +41,26 @@
 		</setup>
 		<request>
 			<identifier>active:positionDelta</identifier>
-			<argument name="businessArea">EFX</argument>
-			<argument name="location">LDN</argument>
-			<argument name="lifecycleType">PRE_STP</argument>
-			<argument name="positionType">NET</argument>
-			<argument name="accountUUID">ef79b770-b605-11e3-a5e2-0800200c9a66</argument>
-			<argument name="positionDate">2014.03.27</argument>
-			<argument name="positionSymbol">EUR</argument>
-			<argument name="deltaSequence">1399554731345</argument>
+			<argument name="businessArea"><literal type="string">EFX</literal></argument>
+			<argument name="location"><literal type="string">LDN</literal></argument>
+			<argument name="lifecycleType"><literal type="string">PRE_STP</literal></argument>
+			<argument name="positionType"><literal type="string">NET</literal></argument>
+			<argument name="accountUUID"><literal type="string">ef79b770-b605-11e3-a5e2-0800200c9a66</literal></argument>
+			<argument name="positionDate"><literal type="string">2014.03.27</literal></argument>
+			<argument name="positionSymbol"><literal type="string">EUR</literal></argument>
+			<argument name="deltaSequence"><literal type="string">1399554731345</literal></argument>
 		</request>
 		<teardown>
 			<verb>DELETE</verb>
-			<identifier>delta:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR:1399554731345</identifier>
+			<identifier>active:positionDelta</identifier>
+			<argument name="businessArea"><literal type="string">EFX</literal></argument>
+			<argument name="location"><literal type="string">LDN</literal></argument>
+			<argument name="lifecycleType"><literal type="string">PRE_STP</literal></argument>
+			<argument name="positionType"><literal type="string">NET</literal></argument>
+			<argument name="accountUUID"><literal type="string">ef79b770-b605-11e3-a5e2-0800200c9a66</literal></argument>
+			<argument name="positionDate"><literal type="string">2014.03.27</literal></argument>
+			<argument name="positionSymbol"><literal type="string">EUR</literal></argument>
+			<argument name="deltaSequence"><literal type="string">1399554731345</literal></argument>
 		</teardown>
 		<assert>
 			<xpath>count(/positionDelta)=1</xpath>

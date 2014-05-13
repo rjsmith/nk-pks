@@ -35,14 +35,26 @@ import org.netkernel.layer0.representation.impl.*;
 
 POSITION_IDENTIFIER_DELIMITER = ":"
 
-businessArea = context.getThisRequest().getArgumentValue("businessArea")
-location = context.getThisRequest().getArgumentValue("location")
-lifecycleType = context.getThisRequest().getArgumentValue("lifecycleType")
-accountUUID = context.getThisRequest().getArgumentValue("accountUUID")
-positionType = context.getThisRequest().getArgumentValue("positionType")
-positionDate = context.getThisRequest().getArgumentValue("positionDate")
-positionSymbol = context.getThisRequest().getArgumentValue("positionSymbol")
-deltaSequence = context.getThisRequest().getArgumentValue("deltaSequence")
+println "businessArea value: "+ context.getThisRequest().getArgumentValue("businessArea")
+businessArea = context.source("arg:businessArea")
+
+println "businessArea:" +businessArea
+
+location = context.source("arg:location")
+lifecycleType = context.source("arg:lifecycleType")
+accountUUID = context.source("arg:accountUUID")
+positionType = context.source("arg:positionType")
+positionDate = context.source("arg:positionDate")
+positionSymbol = context.source("arg:positionSymbol")
+deltaSequence = context.source("arg:deltaSequence")
+
+//location = context.getThisRequest().getArgumentValue("location")
+//lifecycleType = context.getThisRequest().getArgumentValue("lifecycleType")
+//accountUUID = context.getThisRequest().getArgumentValue("accountUUID")
+//positionType = context.getThisRequest().getArgumentValue("positionType")
+//positionDate = context.getThisRequest().getArgumentValue("positionDate")
+//positionSymbol = context.getThisRequest().getArgumentValue("positionSymbol")
+//deltaSequence = context.getThisRequest().getArgumentValue("deltaSequence")
 
 IHDSNode sourceTransaction = context.source("arg:sourceTransaction", IHDSNode.class)
 IHDSNode firstSourceTransactionNode = sourceTransaction.getFirstNode("/sourceTransaction")

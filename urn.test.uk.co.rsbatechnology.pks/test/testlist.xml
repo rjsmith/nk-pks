@@ -1,0 +1,80 @@
+<testlist>
+	<module><uri>urn:uk:co:rsbatechnology:pks</uri></module>
+	<import>res:/org/netkernel/xml/assert/assertLibrary.xml</import>
+	<test name="Retrieve a position delta with active:positionDelta">
+		<setup>
+			<verb>SINK</verb>
+			<identifier>active:positionDelta</identifier>
+			<argument name="businessArea">EFX</argument>
+			<argument name="location">LDN</argument>
+			<argument name="lifecycleType">PRE_STP</argument>
+			<argument name="positionType">NET</argument>
+			<argument name="accountUUID">ef79b770-b605-11e3-a5e2-0800200c9a66</argument>
+			<argument name="positionDate">2014.03.27</argument>
+			<argument name="positionSymbol">EUR</argument>
+			<argument name="deltaSequence">1399554731345</argument>
+			<argument name="sourceTransaction">
+				<literal type="hds">
+					<sourceTransaction>
+						<id>9f8a49c9-3111-417a-9024-80e7c9c69595</id>
+						<version>1</version>
+					</sourceTransaction>			
+				</literal>
+			</argument>
+			<argument name="primary">
+				<literal type="hds">
+					<deltaAmounts>
+						<deltaAmount>
+							<action>DEBIT</action>
+							<type>SETTLEMENT</type>
+						 	<symbol>EUR</symbol>
+						 	<value>10000</value>
+						</deltaAmount>
+						<deltaAmount>
+							<action>DEBIT</action>
+							<type>BASE</type>
+						 	<symbol>USD</symbol>
+						 	<value>13000</value>
+						</deltaAmount>
+					</deltaAmounts>
+				</literal>
+			</argument>
+		</setup>
+		<request>
+			<identifier>active:positionDelta</identifier>
+			<argument name="businessArea">EFX</argument>
+			<argument name="location">LDN</argument>
+			<argument name="lifecycleType">PRE_STP</argument>
+			<argument name="positionType">NET</argument>
+			<argument name="accountUUID">ef79b770-b605-11e3-a5e2-0800200c9a66</argument>
+			<argument name="positionDate">2014.03.27</argument>
+			<argument name="positionSymbol">EUR</argument>
+			<argument name="deltaSequence">1399554731345</argument>
+		</request>
+		<teardown>
+			<verb>DELETE</verb>
+			<identifier>delta:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR:1399554731345</identifier>
+		</teardown>
+		<assert>
+			<xpath>count(/positionDelta)=1</xpath>
+		</assert>
+	</test>
+	<test name="Retrieve all known position deltas with active:allPositionDeltas service">
+		<setup>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/test/setup2positiondeltas.dpml</argument>
+		</setup>
+		<request>
+			<identifier>active:allPositionDeltas</identifier>
+		</request>
+		<teardown>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/test/teardown2positiondeltas.dpml</argument>		
+		</teardown>
+		<assert>
+			<xpath>count(//positionDelta)=2</xpath>
+		</assert>
+	</test>
+	<import>res:/test/positionCacheTests.xml</import>
+</testlist>
+

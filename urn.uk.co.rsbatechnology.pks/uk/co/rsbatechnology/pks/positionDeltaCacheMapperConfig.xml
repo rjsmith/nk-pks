@@ -85,7 +85,7 @@
 			<identifier>active:dpml</identifier>
 			<argument name="operator">res:/uk/co/rsbatechnology/pks/allPositionDeltas.xml</argument>
 		</request>
-	</endpoint>
+	</endpoint> 
 	<endpoint>
 		<description>Resource to delete all persisted position delta records</description>
 		<verbs>DELETE</verbs>
