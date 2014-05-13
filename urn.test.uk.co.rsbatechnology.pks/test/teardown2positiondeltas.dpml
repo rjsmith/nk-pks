@@ -1,0 +1,12 @@
+<sequence>
+	<request>
+		<verb>DELETE</verb>
+		<identifier>delta:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR:1399554731345
+		</identifier>
+	</request>
+	<request assignment="response">
+		<verb>DELETE</verb>
+		<identifier>delta:EFX:LDN:PRE_STP:fe62b3e0-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR:1399554731378
+		</identifier>
+	</request>
+</sequence>

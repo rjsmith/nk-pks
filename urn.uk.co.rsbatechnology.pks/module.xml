@@ -18,6 +18,7 @@
 		<mapper>
 			<config>
 				<import>res:/uk/co/rsbatechnology/pks/positionCacheMapperConfig.xml</import>
+				<import>res:/uk/co/rsbatechnology/pks/positionDeltaCacheMapperConfig.xml</import>
 			</config>
 			<space>
 				<fileset>

@@ -1,0 +1,17 @@
+<sequence>
+	<request assignment="response">
+		<identifier>active:xrl2</identifier>
+		<argument name="template">
+			<request>
+				<identifier>active:xslt2</identifier>
+				<argument name="operator">res:/uk/co/rsbatechnology/pks/allPositionDeltasTransform.xsl</argument>
+				<argument name="operand">
+					<request>
+						<identifier>pds:/pks/delta/</identifier>
+					</request>
+				</argument>
+			</request>
+		</argument>
+	</request>
+</sequence>
+		

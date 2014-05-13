@@ -48,4 +48,11 @@
 		<uri>res:/doc/diary/part6.txt</uri>
 		<keywords />
 	</doc>
+	<doc>
+		<id>doc:uk:co:rsbatechnology:pks:diary:part7</id>
+		<title>Part 7: Position Delta Resource Model</title>
+		<desc>Provide endpoints to query and persist position delta records</desc>
+		<uri>res:/doc/diary/part7.txt</uri>
+		<keywords />
+	</doc>
 </docs>

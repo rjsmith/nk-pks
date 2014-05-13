@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- 
-	Mapper endpoint configuration for PKS Currency Position Resource Model
+	Mapper endpoint configuration for PKS Position Delta Resource Model
 -->
 <config>
 	<endpoint>
-		<description>Service to retrieve a single position resource
+		<description>Service to retrieve a single position delta resource
 		</description>
 		<verbs>SOURCE,DELETE,EXISTS</verbs>
 		<grammar>
 			<active>
-				<identifier>active:position</identifier>
+				<identifier>active:positionDelta</identifier>
 				<argument name="businessArea" desc="Business area partition to which position belongs" />
 				<argument name="location" desc="Owning business location of position" />
 				<argument name="lifecycleType" desc="Position transaction lifecycle type" />
@@ -17,20 +17,21 @@
 				<argument name="positionType" desc="Position calculation type" />
 				<argument name="positionDate" desc="Record date of position" />
 				<argument name="positionSymbol" desc="Instrument symbol of position" />
+				<argument name="deltaSequence" desc="Position delta sequence number (Millis since 1/1/1970T00:00:00Z)" />
 			</active>
 		</grammar>
 		<request>
-			<identifier>pds:/pks/pos/[[arg:businessArea]]:[[arg:location]]:[[arg:lifecycleType]]:[[arg:accountUUID]]:[[arg:positionType]]:[[arg:positionDate]]:[[arg:positionSymbol]]
+			<identifier>pds:/pks/delta/[[arg:businessArea]]:[[arg:location]]:[[arg:lifecycleType]]:[[arg:accountUUID]]:[[arg:positionType]]:[[arg:positionDate]]:[[arg:positionSymbol]]:[[arg:deltaSequence]]
 			</identifier>
 		</request>
 	</endpoint>
 	<endpoint>
-		<description>Service to persist a single position resource
+		<description>Service to persist a single position delta resource
 		</description>
 		<verbs>SINK</verbs>
 		<grammar>
 			<active>
-				<identifier>active:position</identifier>
+				<identifier>active:positionDelta</identifier>
 				<argument name="businessArea" desc="Business area partition to which position belongs" />
 				<argument name="location" desc="Owning business location of position" />
 				<argument name="lifecycleType" desc="Position transaction lifecycle type" />
@@ -38,11 +39,13 @@
 				<argument name="positionType" desc="Position calculation type" />
 				<argument name="positionDate" desc="Record date of position" />
 				<argument name="positionSymbol" desc="Instrument symbol of position" />
+				<argument name="deltaSequence" desc="Position delta sequence number (Millis since 1/1/1970T00:00:00Z)" />
+				<argument name="sourceTransaction" desc="Position delta source transaction" />
 			</active>
 		</grammar>
 		<request>
 			<identifier>active:groovy</identifier>
-			<argument name="operator">res:/uk/co/rsbatechnology/pks/sinkPosition.groovy</argument>
+			<argument name="operator">res:/uk/co/rsbatechnology/pks/sinkPositionDelta.groovy</argument>
 			<argument name="businessArea">arg:businessArea</argument>
 			<argument name="location">arg:location</argument>
 			<argument name="lifecycleType">arg:lifecycleType</argument>
@@ -50,18 +53,20 @@
 			<argument name="positionType">arg:positionType</argument>
 			<argument name="positionDate">arg:positionDate</argument>
 			<argument name="positionSymbol">arg:positionSymbol</argument>
+			<argument name="deltaSequence">arg:deltaSequence</argument>
+			<argument name="sourceTransaction">arg:sourceTransaction</argument>
 		</request>
 	</endpoint>
 	<endpoint>
-		<description>Shortcut alias to retrieve a single position resource
+		<description>Shortcut alias to retrieve a single position delta resource
 		</description>
-		<verbs>SOURCE,SINK,DELETE,EXISTS</verbs>
+		<verbs>SOURCE,DELETE,EXISTS</verbs>
 		<grammar>
-			<simple>pos:{businessArea}:{location}:{lifecycleType}:{accountUUID}:{positionType}:{positionDate}:{positionSymbol}
+			<simple>delta:{businessArea}:{location}:{lifecycleType}:{accountUUID}:{positionType}:{positionDate}:{positionSymbol}:{deltaSequence}
 			</simple>
 		</grammar>
 		<request>
-			<identifier>active:position</identifier>
+			<identifier>active:positionDelta</identifier>
 			<argument name="businessArea">arg:businessArea</argument>
 			<argument name="location">arg:location</argument>
 			<argument name="lifecycleType">arg:lifecycleType</argument>
@@ -69,40 +74,25 @@
 			<argument name="positionType">arg:positionType</argument>
 			<argument name="positionDate">arg:positionDate</argument>
 			<argument name="positionSymbol">arg:positionSymbol</argument>
+			<argument name="deltaSequence">arg:deltaSequence</argument>
 		</request>
 	</endpoint>
 	<endpoint>
-		<description>Service to retrieve a set of position resources given a
-			list of position identifiers
-		</description>
-		<grammar>
-			<active>
-				<identifier>active:positions</identifier>
-				<argument name="positions"
-					desc="HDR representation with positions root node, containing one or more position elements, each containing declarative request definitions for individual positions" />
-			</active>
-		</grammar>
-		<request>
-			<identifier>active:xrl2</identifier>
-			<argument name="template">arg:positions</argument>
-		</request>
-	</endpoint> 
-	<endpoint>
-		<description>Resource to retrieve tree of all positions</description>
+		<description>Resource to retrieve tree of all position deltas</description>
 		<verbs>SOURCE</verbs>
-		<grammar><simple>active:allPositions</simple></grammar>
+		<grammar><simple>active:allPositionDeltas</simple></grammar>
 		<request>
 			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/uk/co/rsbatechnology/pks/allPositions.xml</argument>
+			<argument name="operator">res:/uk/co/rsbatechnology/pks/allPositionDeltas.xml</argument>
 		</request>
 	</endpoint>
 	<endpoint>
-		<description>Resource to delete all persisted position records</description>
+		<description>Resource to delete all persisted position delta records</description>
 		<verbs>DELETE</verbs>
-		<grammar><simple>active:deleteAllPositions</simple></grammar>
+		<grammar><simple>active:deleteAllPositionDeltas</simple></grammar>
 		<request>
-			<!-- Use PDS to return set of all SINKed positions -->
-			<identifier>pds:/pks/pos/</identifier>
+			<!-- Use PDS to return set of all SINKed position deltas -->
+			<identifier>pds:/pks/delta/</identifier>
 		</request>
 	</endpoint>
 </config>
