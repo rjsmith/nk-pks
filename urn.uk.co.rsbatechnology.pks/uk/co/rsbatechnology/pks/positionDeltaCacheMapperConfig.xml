@@ -21,9 +21,22 @@
 			</active>
 		</grammar>
 		<request>
+			<identifier>active:groovy</identifier>
+			<argument name="operator">res:/uk/co/rsbatechnology/pks/sinkPositionDelta.groovy</argument>
+			<argument name="businessArea">arg:businessArea</argument>
+			<argument name="location">arg:location</argument>
+			<argument name="lifecycleType">arg:lifecycleType</argument>
+			<argument name="accountUUID">arg:accountUUID</argument>
+			<argument name="positionType">arg:positionType</argument>
+			<argument name="positionDate">arg:positionDate</argument>
+			<argument name="positionSymbol">arg:positionSymbol</argument>
+			<argument name="deltaSequence">arg:deltaSequence</argument>
+		</request>
+		
+		<!--  
 			<identifier>pds:/pks/delta/[[arg:businessArea]]:[[arg:location]]:[[arg:lifecycleType]]:[[arg:accountUUID]]:[[arg:positionType]]:[[arg:positionDate]]:[[arg:positionSymbol]]:[[arg:deltaSequence]]
 			</identifier>
-		</request>
+			-->
 	</endpoint>
 	<endpoint>
 		<description>Service to persist a single position delta resource
@@ -67,14 +80,14 @@
 		</grammar>
 		<request>
 			<identifier>active:positionDelta</identifier>
-			<argument name="businessArea">arg:businessArea</argument>
-			<argument name="location">arg:location</argument>
-			<argument name="lifecycleType">arg:lifecycleType</argument>
-			<argument name="accountUUID">arg:accountUUID</argument>
-			<argument name="positionType">arg:positionType</argument>
-			<argument name="positionDate">arg:positionDate</argument>
-			<argument name="positionSymbol">arg:positionSymbol</argument>
-			<argument name="deltaSequence">arg:deltaSequence</argument>
+			<argument name="businessArea" method="as-string">arg:businessArea</argument>
+			<argument name="location"  method="as-string">arg:location</argument>
+			<argument name="lifecycleType" method="as-string">arg:lifecycleType</argument>
+			<argument name="accountUUID" method="as-string">arg:accountUUID</argument>
+			<argument name="positionType" method="as-string">arg:positionType</argument>
+			<argument name="positionDate" method="as-string">arg:positionDate</argument>
+			<argument name="positionSymbol" method="as-string">arg:positionSymbol</argument>
+			<argument name="deltaSequence" method="as-string">arg:deltaSequence</argument>
 		</request>
 	</endpoint>
 	<endpoint>

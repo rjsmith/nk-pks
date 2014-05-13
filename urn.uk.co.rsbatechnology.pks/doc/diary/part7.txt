@@ -210,3 +210,109 @@ Suddenly, the ''allPositionDeltas'' test was passing.
 	</positionDelta>
 </positionDeltas>
 {/xml}
+
+With help from Peter Rodgers at 1060Research, I realised that the '''sinkPositionDelta.groovy''' code was now wrong.  Instead of assigning the request argument variables using <code>getArgumentValue(...)</code>, it had to use <code>context.source("arg:businessArea")</code>. This ensured that the variable was being assigned from the representation of the argument (ie. from the '''pbv''' pass-by-value space), not the argument value itself (a '''pbv''' space identifier).  This also meant I had to change all argument values in the position delta tests to use explicit <code><literal></code> argument values.
+
+After some more faffing about,I got the XUnit test for '''active:allPositionDeltas''' working OK. But then the first test, for an individual position delta SINK / SOURCE / DELETE test reported an exception.  The SINK request worked OK in the setup step, but the test request was failing to find the corresponding record using the '''pds/pks/delta/...''' PDS identifier:
+
+{xml}
+   <message>Resource [pds:/pks/delta/pbv:businessArea:pbv:location:pbv:lifecycleType:pbv:accountUUID:pbv:positionType:pbv:positionDate:pbv:positionSymbol:pbv:deltaSequence] in zone [global:pks] does not exist</message>
+{/xml}
+
+The problem now was that the test request of the '''active:positionDelta''' for SOURCEing had been converted to use <code><literal></code> arguments, but the endpoint declaration was using them as simple identifiers:
+
+{xml}
+	<endpoint>
+		<description>Service to retrieve a single position delta resource
+		</description>
+		<verbs>SOURCE,DELETE,EXISTS</verbs>
+		<grammar>
+			<active>
+				<identifier>active:positionDelta</identifier>
+				<argument name="businessArea" desc="Business area partition to which position belongs" />
+				<argument name="location" desc="Owning business location of position" />
+				<argument name="lifecycleType" desc="Position transaction lifecycle type" />
+				<argument name="accountUUID" desc="Position Account UUID" />
+				<argument name="positionType" desc="Position calculation type" />
+				<argument name="positionDate" desc="Record date of position" />
+				<argument name="positionSymbol" desc="Instrument symbol of position" />
+				<argument name="deltaSequence" desc="Position delta sequence number (Millis since 1/1/1970T00:00:00Z)" />
+			</active>
+		</grammar>
+		<request>
+			<identifier>pds:/pks/delta/[[arg:businessArea]]:[[arg:location]]:[[arg:lifecycleType]]:[[arg:accountUUID]]:[[arg:positionType]]:[[arg:positionDate]]:[[arg:positionSymbol]]:[[arg:deltaSequence]]
+			</identifier>
+		</request>
+	</endpoint>
+{/xml} 
+
+In order to handle the arguments as pass-by-value, the endpoint could not use the grammar - parsing syntax alone ... <code>[[arg:businessArea]]</code> resolved to <code>pbv:businessArea</code> and not <code>EFX</code> as before.
+
+Therefore, I could either change the way arguments were expected between the SINK (literals) and SOURCE (identifiers), which would be horribly inconsistent, or change the implementation of the SOURCE endpoint to use a groovy script to resolve the argument values before building the PDS identifier (exactly the same way as the SINK script does). I chose to do the latter.
+
+I could have copy & pasted the '''sinkPositionDelta.groovy''' script into a '''sourcePositionDelta.groovy''' script, but there would be duplicate argument - handling code.
+
+Instead, I added a request verb - handling <code>switch</code> statement, and changed the implementing request for the SOURCE '''active:positionCache''' endpoint to resolve to '''sinkPositionCache.groovy'''
+
+{java}
+switch (context.getThisRequest().getVerb())
+{
+	case INKFRequestReadOnly.VERB_SINK:
+		IHDSNode sourceTransaction = context.source("arg:sourceTransaction", IHDSNode.class)
+		IHDSNode firstSourceTransactionNode = sourceTransaction.getFirstNode("/sourceTransaction")
+		// TODO: Check if null, throw exception
+		
+		IHDSNode deltaAmounts = context.sourcePrimary(IHDSNode.class)
+		IHDSNode firstAmountsNode = deltaAmounts.getFirstNode("/deltaAmounts")
+		// TODO: Check if null, throw exception
+		
+		// Create HDS structure
+		b = new HDSBuilder()
+		b.pushNode("positionDelta")
+		b.addNode("@id", positionDeltaIdentifier)
+		b.addNode("deltaSequence", deltaSequence)
+		b.importNode(firstAmountsNode)
+		b.importNode(firstSourceTransactionNode)
+		
+		// Use PDS to SINK position delta node
+		context.sink(POSITION_DELTA_PDS_PREFIX+positionDeltaIdentifier, b.getRoot())
+		break
+	case INKFRequestReadOnly.VERB_SOURCE:
+		request = context.createRequest(POSITION_DELTA_PDS_PREFIX+positionDeltaIdentifier)
+		response = context.issueRequestForResponse(request)
+		context.createResponseFrom(response)
+		break
+	case INKFRequestReadOnly.VERB_DELETE:
+		request = context.createRequest(POSITION_DELTA_PDS_PREFIX+positionDeltaIdentifier)
+		request.setVerb(INKFRequestReadOnly.VERB_DELETE)
+		response = context.issueRequestForResponse(request)
+		context.createResponseFrom(response)
+		break
+	case INKFRequestReadOnly.VERB_EXISTS:
+		request = context.createRequest(POSITION_DELTA_PDS_PREFIX+positionDeltaIdentifier)
+		request.setVerb(INKFRequestReadOnly.VERB_EXISTS)
+		response = context.issueRequestForResponse(request)
+		context.createResponseFrom(response)
+		break
+}
+{/java}
+
+==The shortcut delta: alias endpoint==
+
+The last change I needed to do was to convert the literal arguments of the '''delta:''' shortcut aliasd endpoint to ''pass-by-value'' arguments into the call of '''active:positionCache''', using the declarive request argument '''method''' attribute:
+
+{xml}
+		<request>
+			<identifier>active:positionDelta</identifier>
+			<argument name="businessArea" method="as-string">arg:businessArea</argument>
+			<argument name="location"  method="as-string">arg:location</argument>
+			<argument name="lifecycleType" method="as-string">arg:lifecycleType</argument>
+			<argument name="accountUUID" method="as-string">arg:accountUUID</argument>
+			<argument name="positionType" method="as-string">arg:positionType</argument>
+			<argument name="positionDate" method="as-string">arg:positionDate</argument>
+			<argument name="positionSymbol" method="as-string">arg:positionSymbol</argument>
+			<argument name="deltaSequence" method="as-string">arg:deltaSequence</argument>
+		</request>
+{/xml}
+ 
+
