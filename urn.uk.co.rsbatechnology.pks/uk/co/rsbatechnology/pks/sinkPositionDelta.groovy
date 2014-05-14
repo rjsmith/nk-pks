@@ -47,14 +47,16 @@ positionDate = context.source("arg:positionDate")
 positionSymbol = context.source("arg:positionSymbol")
 deltaSequence = context.source("arg:deltaSequence")
 
-positionDeltaIdentifier = businessArea+
+positionIdentifier = businessArea+
 POSITION_IDENTIFIER_DELIMITER+location+
 POSITION_IDENTIFIER_DELIMITER+lifecycleType+
 POSITION_IDENTIFIER_DELIMITER+accountUUID+
 POSITION_IDENTIFIER_DELIMITER+positionType+
 POSITION_IDENTIFIER_DELIMITER+positionDate+
-POSITION_IDENTIFIER_DELIMITER+positionSymbol+
-POSITION_IDENTIFIER_DELIMITER+deltaSequence
+POSITION_IDENTIFIER_DELIMITER+positionSymbol
+
+positionDeltaIdentifier = positionIdentifier+
+	POSITION_IDENTIFIER_DELIMITER+deltaSequence
 
 switch (context.getThisRequest().getVerb())
 {
@@ -70,7 +72,7 @@ switch (context.getThisRequest().getVerb())
 		// Create HDS structure
 		b = new HDSBuilder()
 		b.pushNode("positionDelta")
-		b.addNode("@id", positionDeltaIdentifier)
+		b.addNode("@id", positionIdentifier)
 		b.addNode("deltaSequence", deltaSequence)
 		b.importNode(firstAmountsNode)
 		b.importNode(firstSourceTransactionNode)

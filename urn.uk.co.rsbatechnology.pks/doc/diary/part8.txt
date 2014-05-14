@@ -1,0 +1,172 @@
+=Part 8: Position Posting Service Endpoint=
+
+I was now ready to implement one of the key business functions of the PKS application: that of updating positions based on position delta records, known as ''position posting''.  I had minimal working resource models for both currency positions and position deltas.  Now I need to implement a new service that could apply one or more identified position deltas to the corresponding currency positions.
+
+==The active:positionPosting endpoint declaration==
+
+The first consideration was to define the externally-visible service endpoint request.  The service name, '''active:positionPosting''' was fairly obvious.  
+
+To start with, I decided to keep things simple and set up the service to post a single position delta record.  So I needed to define a request argument that identified which position delta to post.  Adopting NetKernel convention, I decided to call this argument '''operand''', as a position delta identifier URI.  This could either be a sub-request to SOURCE to '''active:positionDelta''', or a '''delta:''' shortcut alias.
+
+What would the '''active:positionPosting''' request verb be?  The service mutates the matching currency position (if it exists), or creates a new one (if it doesn't).  But, it doesn't have a natural ''primary'' argument, other than the identity of the position delta record to be applied to the position.  So, I think this should be a SOURCE request.  A fully formed '''active:positionPosting''' request uniquely identifies an action being applied to the position cache, within the set of all theoretical possible posting actions.
+
+The '''active:positionPosting''' endpoint should return the amended representation of the affected currency position, as a HDS node.
+
+OK, I could now create a grammar definition and add it to the PKS '''modules.xml''' file.
+
+{xml}
+<endpoint>
+	<description>Posts a position delta to the position cache
+	</description>
+	<verbs>SOURCE</verbs>
+	<grammar>
+		<active>
+			<identifier>active:positionPosting</identifier>
+			<argument name="operand" desc="Identity of Position Delta resource to be posted" />
+		</active>
+	</grammar>
+	<request>
+		<identifier>res:/dummy
+		</identifier>
+	</request>
+</endpoint>
+{/xml}
+
+Note the re-use of the '''res:/dummy''' position scaffolding endpoint I had created when working on the currency position resource model.
+
+I created an initial XUnit test with the following steps:
+# set up a position delta using the '''active:positionDelta''' service
+# request the '''active:positionPosting''' service
+# teardown the created position delta record
+# assert the response cointains a HDS representation with a <code>position</code> node.
+
+It passed, showing that the grammar was working to resolve the request correctly.  I could now re-run the test as I progressed with the real endpoint implementation.
+
+==The active:positionPosting endpoint implementation==
+
+The position posting service had to do the following:
+
+# Determine if the provided position delta resource in the ''operand'' argument was resolvable, return an error if not.
+# Retrieve the current currency position representation from the position cache, if one already exists
+# Carry out indicated posting action (SYNC, CREDIT or DEBIT)
+# Persist the updated position (or create new one)
+# Return the updated position representation as the service response
+
+I initially focussed on the basic endpoint logic, deferring implementation of exception handling to later stages.
+
+Following the common pattern of NK endpoint implementation, the endpoint first had to determine what it was being asked to, by parsing the '''operand''' argument to retrieve the position delta to be posted, and then extracting the denominated currency amount nodes:
+
+{java}
+// Obtain representation of position delta
+IHDSNode positionDelta = context.source("arg:operand", IHDSNode.class)
+// TODO: Check if null, throw exception
+IHDSNode positionIdentifier = positionDelta.getFirstNode("//@id")
+// TODO: Check if null, throw exception
+def positionIdentifierURI = "pos:"+positionIdentifier.value
+IHDSNodeList deltaAmountNodes = positionDelta.getNodes("//deltaAmounts/deltaAmount")
+{/java}
+
+It also had to retrieve the current representation of the affected identified position, if any.  I used a combination of <code>context.exists(...)</code> and <code>context.source</code>:
+
+{java}
+// Obtain existing representation of affected position, if any
+if (context.exists(positionIdentifierURI)) 
+{
+	position = context.source(positionIdentifierURI, IHDSNode.class)
+	currentPositionAmountsNodes = position.getNodes("//amounts/amount")	
+} 
+{/java}
+
+The endpoint updates (or creates) a currency position record. But all HDS structures are immutable.  So the endpoint had to create a new position representation, combining existing information, with updated amount nodes.  So, the code initialises a <code>HDSBuilder</code> object and sets the root node to '''amounts''':
+
+{java}
+b = new HDSBuilder()
+b.pushNode("amounts")
+{/java}
+
+Then we enter the main business logic of performing the position posting itself, looping over each '''deltaAmount''' node
+
+{java}
+// Perform posting action
+for (deltaAmountNode in deltaAmountNodes)
+{
+	deltaAction = deltaAmountNode.getFirstValue("//action")
+	// TODO: Check if no action node
+	deltaAmountType = deltaAmountNode.getFirstValue("//type")
+	deltaAmountSymbol = deltaAmountNode.getFirstValue("//symbol")
+	deltaAmountValue = deltaAmountNode.getFirstValue("//value")
+	def deltaAmount = deltaAmountValue.toInteger()
+	
+	// Get value of amount type from current position, if any
+	def currentPositionAmount = 0
+	if (currentPositionAmountsNodes != null)
+	{
+		for (positionAmountNode in currentPositionAmountsNodes) {
+			positionAmountType = positionAmountNode.getFirstValue("//type")
+			if (positionAmountType.equalsIgnoreCase(deltaAmountType))
+				{
+					positionAmountValue = positionAmountNode.getFirstValue("//value")
+					currentPositionAmount = positionAmountValue.toInteger()
+				}
+		}	
+	}
+	
+	// Decide which position action to take
+	def updatedPositionAmount
+	switch (deltaAction)
+	{
+		case "CREDIT":
+			updatedPositionAmount = currentPositionAmount + deltaAmount.abs()
+			break
+		case "DEBIT":
+			updatedPositionAmount = currentPositionAmount - deltaAmount.abs()
+			break
+		case "SYNC":
+			updatedPositionAmount = deltaAmount
+			break
+		default:
+			// TODO: Handle unknown delta action
+			break			
+	}
+	
+	if (updatedPositionAmount != null) 
+	{
+		// Add amount node to updated position amounts HDS structure
+		b.pushNode("amount")
+		b.addNode("type", deltaAmountType)
+		b.addNode("symbol", deltaAmountSymbol)
+		b.addNode("value", updatedPositionAmount)
+		b.popNode()
+	}
+}
+{/java}
+
+Finally, the endpoint has to persist the updated (or new) position, by sending a sub-request to the '''active:position''' service (using the shortcut alias '''pos:''' URI), and return the position representation as the response to the '''active:positionPosting''' service:
+
+{java}
+IHDSNode updatedPositionAmountsNode = b.getRoot()
+
+// Use active:position service to persist updated position
+sinkPositionRequest = context.createRequest(positionIdentifierURI)
+sinkPositionRequest.setVerb(INKFRequestReadOnly.VERB_SINK)
+sinkPositionRequest.addPrimaryArgument(updatedPositionAmountsNode)
+sinkPositionResponse = context.issueRequest(sinkPositionRequest)
+// TODO: Handle exception
+
+// Return updated position as response
+positionRequest = context.createRequest(positionIdentifierURI)
+positionRequest.setRepresentationClass(IHDSNode.class)
+positionResponse = context.issueRequestForResponse(positionRequest)
+context.createResponseFrom(positionResponse)
+{/java}
+
+I modified the first XUnit test to set up an existing position delta AND a position (using a separate DPML script), and added <code><assert></code> clauses to ensure the calculated revised position amounts were as expected:
+
+{xml}
+	<assert>
+		<xpath>count(/position)=1</xpath>
+		<xpath>/position/amounts/amount[type='SETTLEMENT']/value=40000</xpath>
+		<xpath>/position/amounts/amount[type='BASE']/value=57000</xpath>
+	</assert>
+{/xml}
+

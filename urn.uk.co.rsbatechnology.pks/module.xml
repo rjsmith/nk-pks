@@ -19,6 +19,22 @@
 			<config>
 				<import>res:/uk/co/rsbatechnology/pks/positionCacheMapperConfig.xml</import>
 				<import>res:/uk/co/rsbatechnology/pks/positionDeltaCacheMapperConfig.xml</import>
+				<endpoint>
+					<description>Posts a position delta to the position cache
+					</description>
+					<verbs>SOURCE</verbs>
+					<grammar>
+						<active>
+							<identifier>active:positionPosting</identifier>
+							<argument name="operand" desc="Identity of Position Delta resource to be posted" />
+						</active>
+					</grammar>
+					<request>
+						<identifier>active:groovy</identifier>
+						<argument name="operator">res:/uk/co/rsbatechnology/pks/positionPosting.groovy</argument>
+						<argument name="operand">arg:operand</argument>
+					</request>
+				</endpoint>				
 			</config>
 			<space>
 				<fileset>

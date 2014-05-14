@@ -55,4 +55,11 @@
 		<uri>res:/doc/diary/part7.txt</uri>
 		<keywords />
 	</doc>
+	<doc>
+		<id>doc:uk:co:rsbatechnology:pks:diary:part8</id>
+		<title>Part 8: Position Posting Service Endpoint</title>
+		<desc>Create endpoint to post a position delta to the position cache</desc>
+		<uri>res:/doc/diary/part8.txt</uri>
+		<keywords />
+	</doc>
 </docs>

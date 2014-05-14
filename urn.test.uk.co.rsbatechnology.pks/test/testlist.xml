@@ -3,5 +3,24 @@
 	<import>res:/org/netkernel/xml/assert/assertLibrary.xml</import>
 	<import>res:/test/positionCacheTests.xml</import>
 	<import>res:/test/positionDeltaCacheTests.xml</import>
+	<test name="Post an existing DEBIT position delta to an existing position">
+		<setup>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/test/setup1delta1position.dpml</argument>
+		</setup>
+		<request>
+			<identifier>active:positionPosting</identifier>
+			<argument name="operand">delta:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR:1399554731345</argument>
+		</request>
+		<teardown>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/test/deleteAllPositions.dpml</argument>
+		</teardown>
+		<assert>
+			<xpath>count(/position)=1</xpath>
+			<xpath>/position/amounts/amount[type='SETTLEMENT']/value=40000</xpath>
+			<xpath>/position/amounts/amount[type='BASE']/value=57000</xpath>
+		</assert>
+	</test>
 </testlist>
 

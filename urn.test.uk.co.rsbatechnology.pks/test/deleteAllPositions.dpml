@@ -4,4 +4,9 @@
 		<identifier>active:deleteAllPositions
 		</identifier>
 	</request>
+	<request assignment="response">
+		<verb>DELETE</verb>
+		<identifier>active:deleteAllPositionDeltas
+		</identifier>
+	</request>
 </sequence>
