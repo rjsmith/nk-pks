@@ -20,6 +20,7 @@
 				<import>res:/uk/co/rsbatechnology/pks/positionCacheMapperConfig.xml</import>
 				<import>res:/uk/co/rsbatechnology/pks/positionDeltaCacheMapperConfig.xml</import>
 				<endpoint>
+					<id>pks:positionPosting</id>
 					<description>Posts a position delta to the position cache
 					</description>
 					<verbs>SOURCE</verbs>

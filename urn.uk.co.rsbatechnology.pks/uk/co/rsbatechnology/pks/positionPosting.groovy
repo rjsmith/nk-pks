@@ -8,16 +8,24 @@ import org.netkernel.layer0.representation.impl.*;
 import org.netkernel.layer0.nkf.*;
 
 IHDSNode position
+IHDSNode positionDelta
 IHDSNodeList currentPositionAmountsNodes
 HDSBuilder b
 
 // Obtain representation of position delta
-IHDSNode positionDelta = context.source("arg:operand", IHDSNode.class)
-// TODO: Check if null, throw exception
+try {
+	positionDelta = context.source("arg:operand", IHDSNode.class)
+} catch (Exception e)
+{
+	nkfe = new NKFException("pks:positionposting:missingdelta",
+		"Cannot obtain position delta representatation", e)
+	throw nkfe
+}
+
 println "positionDelta:"+positionDelta
 
 IHDSNode positionIdentifier = positionDelta.getFirstNode("//@id")
-// TODO: Check if null, throw exception
+
 println "positionIdentifier"+positionIdentifier
 def positionIdentifierURI = "pos:"+positionIdentifier.value
 
@@ -43,11 +51,19 @@ for (deltaAmountNode in deltaAmountNodes)
 {
 	println "Processing deltaAmountNode:"+deltaAmountNode
 	deltaAction = deltaAmountNode.getFirstValue("//action")
-	// TODO: Check if no action node
 	deltaAmountType = deltaAmountNode.getFirstValue("//type")
 	deltaAmountSymbol = deltaAmountNode.getFirstValue("//symbol")
 	deltaAmountValue = deltaAmountNode.getFirstValue("//value")
-	def deltaAmount = deltaAmountValue.toInteger()
+	
+	def deltaAmount
+	try {
+		deltaAmount = deltaAmountValue.toInteger()
+	} catch (Exception e)
+	{
+		nkfe = new NKFException("pks:positionposting:invalidpositiondeltaamountvalue",
+			"Position Delta amount value is not a valid integer:"+deltaAmountValue, e)
+		throw nkfe
+	}
 	
 	// Get value of amount type from current position, if any
 	def currentPositionAmount = 0
@@ -58,8 +74,14 @@ for (deltaAmountNode in deltaAmountNodes)
 			if (positionAmountType.equalsIgnoreCase(deltaAmountType))
 				{
 					positionAmountValue = positionAmountNode.getFirstValue("//value")
-					currentPositionAmount = positionAmountValue.toInteger()
-					// TODO: Handle NumberFormatException here
+					try {
+						currentPositionAmount = positionAmountValue?.toInteger()
+					} catch (NumberFormatException e)
+					{
+						nkfe = new NKFException("pks:positionposting:invalidpositionamount",
+							"Position amount is not a valid integer:"+positionAmountValue, e)
+						throw nkfe					
+					}
 				}
 		}
 		
@@ -82,9 +104,9 @@ for (deltaAmountNode in deltaAmountNodes)
 			println "SYNC updatedPositionAmount"+updatedPositionAmount
 			break
 		default:
-			// TODO: Handle unknown delta action
-			println "Unknown action"
-			break			
+			nkfe = new NKFException("pks:positionposting:invaliddeltaaction",
+				"Position Delta action is not valid:"+deltaAction)
+			throw nkfe		
 	}
 	
 	if (updatedPositionAmount != null) 
@@ -106,11 +128,14 @@ println "updatedPositionAmountsNode"+updatedPositionAmountsNode
 sinkPositionRequest = context.createRequest(positionIdentifierURI)
 sinkPositionRequest.setVerb(INKFRequestReadOnly.VERB_SINK)
 sinkPositionRequest.addPrimaryArgument(updatedPositionAmountsNode)
-sinkPositionResponse = context.issueRequest(sinkPositionRequest)
-// TODO: Handle exception
+try {
+	sinkPositionResponse = context.issueRequestForResponse(sinkPositionRequest)
+	context.createResponseFrom(sinkPositionResponse)
+} catch (Exception e)
+{
+	nkfe = new NKFException("pks:positionposting:positionNotUpdated",
+		"Re-calculated position could not be persisted", e)
+	throw nkfe
+}
 
-// Return updated position as response
-positionRequest = context.createRequest(positionIdentifierURI)
-positionRequest.setRepresentationClass(IHDSNode.class)
-positionResponse = context.issueRequestForResponse(positionRequest)
-context.createResponseFrom(positionResponse)
+

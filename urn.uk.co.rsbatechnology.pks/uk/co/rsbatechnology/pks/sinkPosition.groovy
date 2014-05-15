@@ -40,5 +40,10 @@ b.pushNode("position")
 b.addNode("@id", positionIdentifier)
 b.importNode(firstAmountsNode)
 
+newPosition = b.getRoot()
+
 // Use PDS to SINK position node
-context.sink("pds:/pks/pos/"+positionIdentifier, b.getRoot())
+context.sink("pds:/pks/pos/"+positionIdentifier, newPosition)
+
+// Return position representation as SINK request response
+context.createResponseFrom(newPosition)

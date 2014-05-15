@@ -31,5 +31,7 @@
 		</import>
 		<!-- Provides access to low-level transreptors (bytes to string) -->
 		<import><uri>urn:org:netkernel:ext:layer1</uri></import>
+		<!-- Enables active:groovy to be resolvable -->
+		<import><uri>urn:org:netkernel:lang:groovy</uri></import>
 	</rootspace>
 </module>

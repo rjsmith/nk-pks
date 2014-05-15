@@ -10,7 +10,7 @@ To start with, I decided to keep things simple and set up the service to post a 
 
 What would the '''active:positionPosting''' request verb be?  The service mutates the matching currency position (if it exists), or creates a new one (if it doesn't).  But, it doesn't have a natural ''primary'' argument, other than the identity of the position delta record to be applied to the position.  So, I think this should be a SOURCE request.  A fully formed '''active:positionPosting''' request uniquely identifies an action being applied to the position cache, within the set of all theoretical possible posting actions.
 
-The '''active:positionPosting''' endpoint should return the amended representation of the affected currency position, as a HDS node.
+The '''active:positionPosting''' endpoint should return the amended representation of the affected currency position, as a HDS node.  That should play nicely with NetKernel's caching, as then each request to '''active:positionPosting''' represents a one-time computation of a position change.
 
 OK, I could now create a grammar definition and add it to the PKS '''modules.xml''' file.
 
@@ -169,4 +169,140 @@ I modified the first XUnit test to set up an existing position delta AND a posit
 		<xpath>/position/amounts/amount[type='BASE']/value=57000</xpath>
 	</assert>
 {/xml}
+
+I duplicated the tests with other combinations of position delta actions and existent / non-existent positions to verify the basic logic was working correctly.
+
+==Refactoring==
+
+When the '''positionPosting.groovy''' script SINKs the updated position, it has to immediately SOURCE the position to get the full position representation.  This doesn't seem very efficient as it needs to access the PDS sub-system twice. Using the Visualizer, I could see the position SINK taking 4ms, followed by the position SOURCE, which took 2ms.  Drilling down the request chain for the SOURCE request, I could see it ended up hitting the underlying H2 SQL database (a call to the '''active:sqlQueryBlob''' service).  One way to improve this is to get the '''sinkPosition.groovy''' script to return the just-persisted position representation as its request response.
+
+I changed the final line in '''sinkPosition.groovy''' from this:
+
+{java}
+context.sink("pds:/pks/pos/"+positionIdentifier, b.getRoot())
+{/java}
+
+to this:
+{java}
+newPosition = b.getRoot()
+
+// Use PDS to SINK position node
+context.sink("pds:/pks/pos/"+positionIdentifier, newPosition)
+
+// Return position representation as SINK request response
+context.createResponseFrom(newPosition)
+
+{/java}
+
+The last '''pos:''' SOURCE request in '''positionPosting.groovy''' could now be removed, using the response from the '''pos:''' SINK request as the response for the endpoint.
+
+Re-running the test showed that the additional 2ms had now gone.
+
+==Exception Handling==
+
+The '''active:positionPosting''' endpoint needs to trap a number of important exception conditions:
+* Check if the position delta identified in the '''operand''' request argument exists (NB: if the '''operand''' argument is missing, the request to '''active:positionPosting''' would fail to match the endpoint grammar and be treated as an unresolvable request)
+* Check the position delta resource representation has a '''@id''' attribute
+* If position delta '''deltaAmount''' nodes are invalid (missing elements, unknown delta action, or have unparsable amount value)
+* Unable to persist updated position ('''pos:''' request returns an exception)
+
+The first exception handler I added was for an unretrievable position delta identifier, as provided in the '''operand''' argument, following the guidance for [[doc:physicalreference:exception | exception handling]]:
+
+{java}
+try {
+	positionDelta = context.source("arg:operand", IHDSNode.class)
+} catch (Exception e)
+{
+	nkfe = new NKFException("pks:positionposting:missingdelta",
+		"Cannot obtain position delta representatation", e)
+	throw nkfe
+}
+{/java}
+
+I added a new test that set up a position delta with one delta identifier, but issued the request to '''active:positionPosting''' with a slightly altered identifier.  The test used the <code><exception></code> built-in assert to check that the exception was for the '''pks:positionposting:missingdelta''' exception id:
+
+{xml}
+	<assert>
+		<exception>pks:positionposting:missingdelta</exception>
+	</assert>
+{/xml}
+
+Unfortunately, the test did not pass.  Instead, it reported an unhandled '''PDS Resource not found''' exception. Inspecting the request trace showed that this was the ''id'' of the deepest exception in the exception stack.  I then dug out the source code for the XUnit Test Engine (the <code>org.ten60.netkernel.test.endpoint.TestEngineEndpoint</code> class in the '''urn.org.netkernel.mod.test-1.10.21''' module in my NK5.2.1EE install) to see how the <code><exception></code> was implemented:
+
+{java}
+											if (name.equals("exception"))
+											{	id = ((NKFException)t).getDeepestId();
+											}
+											else
+											{	id = ((NKFException)t).getDeepestMessage();
+											}
+{/java}
+ 
+That explained why the test was failing: the <code><exception></code> assert only inspects the '''deepestID''' in the exception trace. To check this, I changed the asserted id to '''PDS Resource not found''' and it now worked.  Cool ... but I really want to assert the exception id that my code is generating, not at another point in the exception stack.
+
+<blockquote>
+What I really need is an assert that will iterate up through the exception stack, reporting success if it finds the specified exception ID (or message) somewhere in the list.  I attempted to implement a [[doc:mod:test:guide:custom-asserts | custom assert]], but the XUnit test engine [[doc:mod:test:guide:exceptions | does not support custom exception assertions]] ... only the built-in <code><exception></code> assert can be invoked if the test request throws an exception.
+</blockquote>
+
+After some further help from Peter Rodgers, I ended writing a re-usable test groovy script that issues a request (given as an argument), then recurses through the exception to find if the expected exception id matches any of the NKFExceptions in the stack.
+
+{java}
+import org.netkernel.layer0.nkf.NKFException
+ 
+ expectedExceptionID = context.source("arg:expectedExceptionID")
+
+ expectedMatchesActual = false
+ try {
+	 // Issue test request, expect it to throw an exception
+	 context.source("arg:testRequest")
+ }
+ catch (Throwable t)
+ {
+	 // Recursively search through exception stack to find a NKFException that matches the expectedExceptionID
+	 while (t != null)
+	 {
+		 if (t instanceof NKFException)
+		 {
+			 id = ((NKFException)t).getId()
+			 expectedMatchesActual = expectedExceptionID.equals(id)
+			 if (expectedMatchesActual)
+				 break
+		 }
+		 t = t.getCause()
+	 }
+ }
+ context.createResponseFrom(expectedMatchesActual)
+{/java}
+
+The XUnit test itself them becomes this:
+
+{xml}
+	<test name="Unresolvable positionPosting operand argument position delta identifier">
+		<setup>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/test/setup1syncdelta1position.dpml</argument>
+		</setup>
+		<request>
+			<identifier>active:groovy</identifier>
+			<argument name="operator">res:/test/requestExpectException.groovy</argument>
+			<argument name="testRequest">
+				<request>
+					<identifier>active:positionPosting</identifier>
+					<argument name="operand">delta:UNKNOWN:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR:1399554731345</argument>
+				</request>
+			</argument>
+			<argument name="expectedExceptionID">
+				<literal type="string">pks:positionposting:missingdelta</literal>
+			</argument>
+		</request>
+		<teardown>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/test/deleteAllPositions.dpml</argument>
+		</teardown>
+		<assert>
+			<true />
+		</assert>
+	</test>
+{/xml}
+
 

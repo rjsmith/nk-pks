@@ -1,0 +1,49 @@
+<!--
+	Persists one currency position record and a position delta record with matching position identifier
+-->
+<sequence>
+	<request assignment="response">
+		<verb>DELETE</verb>
+		<identifier>active:deleteAllPositions</identifier>
+	</request>
+	<request assignment="response">
+		<verb>DELETE</verb>
+		<identifier>active:deleteAllPositionDeltas</identifier>
+	</request>
+	<request assignment="response">
+		<verb>SINK</verb>
+		<identifier>active:positionDelta</identifier>
+		<argument name="businessArea"><literal type="string">EFX</literal></argument>
+		<argument name="location"><literal type="string">LDN</literal></argument>
+		<argument name="lifecycleType"><literal type="string">PRE_STP</literal></argument>
+		<argument name="positionType"><literal type="string">NET</literal></argument>
+		<argument name="accountUUID"><literal type="string">ef79b770-b605-11e3-a5e2-0800200c9a66</literal></argument>
+		<argument name="positionDate"><literal type="string">2014.03.27</literal></argument>
+		<argument name="positionSymbol"><literal type="string">EUR</literal></argument>
+		<argument name="deltaSequence"><literal type="string">1399554731345</literal></argument>
+		<argument name="sourceTransaction">
+			<literal type="hds">
+				<sourceTransaction>
+					<id>9f8a49c9-3111-417a-9024-80e7c9c69595</id>
+					<version>1</version>
+				</sourceTransaction>			
+			</literal>
+		</argument>
+		<argument name="primary">
+			<literal type="hds">
+				<deltaAmounts>
+					<deltaAmount>
+						<action>CREDIT</action>
+						<type>SETTLEMENT</type>
+					 	<symbol>EUR</symbol>
+					</deltaAmount>
+					<deltaAmount>
+						<action>CREDIT</action>
+						<type>BASE</type>
+					 	<symbol>USD</symbol>
+					</deltaAmount>
+				</deltaAmounts>
+			</literal>
+		</argument>
+	</request>
+</sequence>
