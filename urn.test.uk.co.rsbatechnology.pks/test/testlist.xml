@@ -1,106 +1,46 @@
 <testlist>
 	<module><uri>urn:uk:co:rsbatechnology:pks</uri></module>
 	<import>res:/org/netkernel/xml/assert/assertLibrary.xml</import>
-	<assertDefinition name="topExceptionID">
-	 	<identifier>active:groovy</identifier>
-		<argument name="operator">res:/test/assert/topExceptionIDAssertion.groovy</argument>
-	  	<argument name="response">arg:test:response</argument>
-	  	<argument name="exceptionID">arg:test:tagValue</argument>
-	</assertDefinition>
 	<import>res:/test/positionCacheTests.xml</import>
 	<import>res:/test/positionDeltaCacheTests.xml</import>
-	<test name="Post an existing DEBIT position delta to an existing position">
+	<import>res:/test/positionPostingTests.xml</import>
+	<test name="Settlement Position Builder position delta test with no existing positions">
 		<setup>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/setup1delta1position.dpml</argument>
-		</setup>
-		<request>
-			<identifier>active:positionPosting</identifier>
-			<argument name="operand">delta:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR:1399554731345</argument>
-		</request>
-		<teardown>
 			<identifier>active:dpml</identifier>
 			<argument name="operator">res:/test/deleteAllPositions.dpml</argument>
-		</teardown>
-		<assert>
-			<xpath>count(/position)=1</xpath>
-			<xpath>/position/amounts/amount[type='SETTLEMENT']/value=40000</xpath>
-			<xpath>/position/amounts/amount[type='BASE']/value=57000</xpath>
-		</assert>
-	</test>
-	<test name="Post an existing CREDIT position delta to a new position">
-		<setup>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/setup1deltaNopositions.dpml</argument>
 		</setup>
 		<request>
-			<identifier>active:positionPosting</identifier>
-			<argument name="operand">delta:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR:1399554731345</argument>
-		</request>
-		<teardown>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/deleteAllPositions.dpml</argument>
-		</teardown>
-		<assert>
-			<xpath>count(/position)=1</xpath>
-			<xpath>/position/amounts/amount[type='SETTLEMENT']/value=10000</xpath>
-			<xpath>/position/amounts/amount[type='BASE']/value=13000</xpath>
-		</assert>
-	</test>
-	<test name="Post an existing SYNC position delta to a new position">
-		<setup>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/setup1syncdeltaNopositions.dpml</argument>
-		</setup>
-		<request>
-			<identifier>active:positionPosting</identifier>
-			<argument name="operand">delta:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR:1399554731345</argument>
-		</request>
-		<teardown>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/deleteAllPositions.dpml</argument>
-		</teardown>
-		<assert>
-			<xpath>count(/position)=1</xpath>
-			<xpath>/position/amounts/amount[type='SETTLEMENT']/value=10000</xpath>
-			<xpath>/position/amounts/amount[type='BASE']/value=13000</xpath>
-		</assert>
-	</test>
-	<test name="Post an existing SYNC position delta to an existing position">
-		<setup>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/setup1syncdelta1position.dpml</argument>
-		</setup>
-		<request>
-			<identifier>active:positionPosting</identifier>
-			<argument name="operand">delta:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR:1399554731345</argument>
-		</request>
-		<teardown>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/deleteAllPositions.dpml</argument>
-		</teardown>
-		<assert>
-			<xpath>count(/position)=1</xpath>
-			<xpath>/position/amounts/amount[type='SETTLEMENT']/value=-10000</xpath>
-			<xpath>/position/amounts/amount[type='BASE']/value=-13000</xpath>
-		</assert>
-	</test>
-	<test name="Unresolvable positionPosting operand argument position delta identifier">
-		<setup>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/setup1syncdelta1position.dpml</argument>
-		</setup>
-		<request>
-			<identifier>active:groovy</identifier>
-			<argument name="operator">res:/test/requestExpectException.groovy</argument>
-			<argument name="testRequest">
-				<request>
-					<identifier>active:positionPosting</identifier>
-					<argument name="operand">delta:UNKNOWN:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR:1399554731345</argument>
-				</request>
-			</argument>
-			<argument name="expectedExceptionID">
-				<literal type="string">pks:positionposting:missingdelta</literal>
+			<identifier>active:settlementPositionBuilder</identifier>
+			<verb>SOURCE</verb>
+			<argument name="operand">
+				<literal type="hds">
+					<trade>
+						<lifecycle>
+							<businessArea>EFX</businessArea>
+							<location>LDN</location>
+							<transactionID>997cc866-3cd5-40c7-bb63-4e1c608b80f9</transactionID>
+							<version>1</version>
+							<lifecycleType>PRE_STP</lifecycleType>
+						</lifecycle>
+						<parties>
+							<counterparty>ef79b770-b605-11e3-a5e2-0800200c9a66</counterparty>
+						</parties>
+						<fxspotoutright>
+							<baseCurrency>
+								<symbol>EUR</symbol>
+								<settlementAmount>10000.00</settlementAmount>
+								<settlementAmountUSD>13713.00</settlementAmountUSD>
+							</baseCurrency>
+							<termCurrency>
+								<symbol>GBP</symbol>
+								<settlementAmount>8166.69</settlementAmount>
+								<settlementAmountUSD>13713.00</settlementAmountUSD>
+							</termCurrency>
+							<counterpartyBuysBase>true</counterpartyBuysBase>
+							<valueDate>2014-05-28</valueDate>
+						</fxspotoutright>
+					</trade>	
+				</literal>
 			</argument>
 		</request>
 		<teardown>
@@ -108,111 +48,7 @@
 			<argument name="operator">res:/test/deleteAllPositions.dpml</argument>
 		</teardown>
 		<assert>
-			<true />
-		</assert>
-	</test>
-	<test name="Posted Delta amount value is not an integer">
-		<setup>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/setupdeltaInvalidAmountValue.dpml</argument>
-		</setup>
-		<request>
-			<identifier>active:groovy</identifier>
-			<argument name="operator">res:/test/requestExpectException.groovy</argument>
-			<argument name="testRequest">
-				<request>
-					<identifier>active:positionPosting</identifier>
-					<argument name="operand">delta:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR:1399554731345</argument>
-				</request>
-			</argument>
-			<argument name="expectedExceptionID">
-				<literal type="string">pks:positionposting:invalidpositiondeltaamountvalue</literal>
-			</argument>
-		</request>
-		<teardown>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/deleteAllPositions.dpml</argument>
-		</teardown>
-		<assert>
-			<true />
-		</assert>
-	</test>
-	<test name="Posted Delta amount value is missing">
-		<setup>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/setupdeltaMissingAmountValue.dpml</argument>
-		</setup>
-		<request>
-			<identifier>active:groovy</identifier>
-			<argument name="operator">res:/test/requestExpectException.groovy</argument>
-			<argument name="testRequest">
-				<request>
-					<identifier>active:positionPosting</identifier>
-					<argument name="operand">delta:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR:1399554731345</argument>
-				</request>
-			</argument>
-			<argument name="expectedExceptionID">
-				<literal type="string">pks:positionposting:invalidpositiondeltaamountvalue</literal>
-			</argument>
-		</request>
-		<teardown>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/deleteAllPositions.dpml</argument>
-		</teardown>
-		<assert>
-			<true />
-		</assert>
-	</test>
-	<test name="Posted existing currency position has invalid position amount value">
-		<setup>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/setup1delta1positionWithInvalidAmountValues.dpml</argument>
-		</setup>
-		<request>
-			<identifier>active:groovy</identifier>
-			<argument name="operator">res:/test/requestExpectException.groovy</argument>
-			<argument name="testRequest">
-				<request>
-					<identifier>active:positionPosting</identifier>
-					<argument name="operand">delta:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR:1399554731345</argument>
-				</request>
-			</argument>
-			<argument name="expectedExceptionID">
-				<literal type="string">pks:positionposting:invalidpositionamount</literal>
-			</argument>
-		</request>
-		<teardown>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/deleteAllPositions.dpml</argument>
-		</teardown>
-		<assert>
-			<true />
-		</assert>
-	</test>
-	<test name="Posted Delta amount action is not supported">
-		<setup>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/setupdeltaUnknownAmountAction.dpml</argument>
-		</setup>
-		<request>
-			<identifier>active:groovy</identifier>
-			<argument name="operator">res:/test/requestExpectException.groovy</argument>
-			<argument name="testRequest">
-				<request>
-					<identifier>active:positionPosting</identifier>
-					<argument name="operand">delta:EFX:LDN:PRE_STP:ef79b770-b605-11e3-a5e2-0800200c9a66:NET:2014.03.27:EUR:1399554731345</argument>
-				</request>
-			</argument>
-			<argument name="expectedExceptionID">
-				<literal type="string">pks:positionposting:invaliddeltaaction</literal>
-			</argument>
-		</request>
-		<teardown>
-			<identifier>active:dpml</identifier>
-			<argument name="operator">res:/test/deleteAllPositions.dpml</argument>
-		</teardown>
-		<assert>
-			<true />
+			<xpath>count(//positionDelta)=2</xpath>
 		</assert>
 	</test>
 </testlist>

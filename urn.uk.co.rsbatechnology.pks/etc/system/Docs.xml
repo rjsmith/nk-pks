@@ -62,4 +62,18 @@
 		<uri>res:/doc/diary/part8.txt</uri>
 		<keywords />
 	</doc>
+	<doc>
+		<id>doc:uk:co:rsbatechnology:pks:diary:part9</id>
+		<title>Part 9: FX Trade Resource Model</title>
+		<desc>FX trade resource representation and discussion of TradeBridge Overlay</desc>
+		<uri>res:/doc/diary/part9.txt</uri>
+		<keywords />
+	</doc>
+	<doc>
+		<id>doc:uk:co:rsbatechnology:pks:diary:part10</id>
+		<title>Part 10: Settlement Position Builder Endpoint</title>
+		<desc>Implementing settlement position builder endpoint</desc>
+		<uri>res:/doc/diary/part10.txt</uri>
+		<keywords />
+	</doc>
 </docs>

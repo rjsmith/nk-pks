@@ -66,7 +66,7 @@ switch (context.getThisRequest().getVerb())
 		// TODO: Check if null, throw exception
 		
 		IHDSNode deltaAmounts = context.sourcePrimary(IHDSNode.class)
-		IHDSNode firstAmountsNode = deltaAmounts.getFirstNode("/deltaAmounts")
+		IHDSNode firstAmountsNode = deltaAmounts.getFirstNode("//deltaAmounts")
 		// TODO: Check if null, throw exception
 		
 		// Create HDS structure
@@ -78,7 +78,9 @@ switch (context.getThisRequest().getVerb())
 		b.importNode(firstSourceTransactionNode)
 		
 		// Use PDS to SINK position delta node
-		context.sink(POSITION_DELTA_PDS_PREFIX+positionDeltaIdentifier, b.getRoot())
+		positionDeltaRepresentation = b.getRoot()
+		context.sink(POSITION_DELTA_PDS_PREFIX+positionDeltaIdentifier, positionDeltaRepresentation)
+		context.createResponseFrom(positionDeltaRepresentation)
 		break
 	case INKFRequestReadOnly.VERB_SOURCE:
 		request = context.createRequest(POSITION_DELTA_PDS_PREFIX+positionDeltaIdentifier)

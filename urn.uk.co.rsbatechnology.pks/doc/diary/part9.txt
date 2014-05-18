@@ -1,0 +1,55 @@
+=Part 9: FX Trade Resource Model=
+
+Looking ahead to implementing the first position builder, I knew the application needed a resource model for source transactions, such as FX Spot and Outright trades.  In line with the ROC development philosophy of working in from the edges, I needed a working trade resource model before I could tackle the position buidler core
+
+==FX Trade Resource Representation==
+
+Every FX trading system describes FX trades using a rich set of attributes, broadly speaking in the following categories:
+# Core contractual economic information (amounts, currencies, prices, traded direction, dates)
+# Legal entity information (counterparty, internal legal entity)
+# Origination information (external system, external trade identifiers)
+# Internal booking information (books, owning branch)
+# Trade lifecycle information (timestamps, trade status)
+
+For the purposes of the PKS itself, we are only interested in a limited subset of these attributes, that are directly required for calculating position changes.  Other categories of attributes are outside the scope of this prototype.  In a real-world system, we would invest the time to develop a full resource model.  However, one difference between OO and ROC approaches is that ROC recognizes explicitly there are different representations for the same real-world entity.  The PKS, as an isolated application, is free to maintain a trade resource model that is fit for its purposes only.  It is left to the external-facing '''Transport''' endpoints to extract only the relevant data from the incoming transactions to be stored in the PKS's own resource model.
+
+With this in mind, I sketched out a minimal HDS - based trade representation, that can be used for both FX spot and FX outright trade types:
+
+{xml}
+<trade>
+	<lifecycle>
+		<businessArea>EFX</businessArea>
+		<location>LDN</location>
+		<transactionID>9f8a49c9-3111-417a-9024-80e7c9c69595</transactionID>
+		<version>1</version>
+		<lifecycleType>PRE_STP</lifecycleType>
+	</lifecycle>
+	<parties>
+		<counterparty>ef79b770-b605-11e3-a5e2-0800200c9a66</counterparty>
+	</parties>
+	<fxspotoutright>
+		<baseCurrency>
+			<symbol>EUR</symbol>
+			<settlementAmount>10000.00</settlementAmount>
+			<settlementAmountUSD>13713.00</settlementAmountUSD>
+		</baseCurrency>
+		<termCurrency>
+			<symbol>GBP</symbol>
+			<settlementAmount>8166.69</settlementAmount>
+			<settlementAmountUSD>13713.00</settlementAmountUSD>
+		</termCurrency>
+		<counterpartyBuysBase>true</counterpartyBuysBase>
+		<valueDate>2014-05-28</valueDate>
+	</fxspotoutright>
+</trade>
+{/xml}
+
+==Trade Resource Endpoints==
+
+Within the PKS itself, there is no need to persist FX trade resources to disk.  FX trades are only used to generate position deltas: once that has been done, the PKS does not need to refer back to the originating transaction.  However, the PKS appliction will need to pass round representations of each FX trade to the set of position builders.  In ROC, this should be done with a FX trade identifier, which can then be SOURCEd by each builder endpoint.  NK will take care of caching the representation of the repeated SOURCEs.
+
+So, a non-persisted resource model is needed to make the fx trade representations available to any builder.  Thinking further about ROC architectural patterns, I realised I needed a Bridge Overlay pattern, where upstream Transports can inject a new FX trade into a '''TradeBridge''' space, which overlays the lower, core PKS spaces and endpoints.  The '''TradeBridge''' overlay transforms the upstream FX trade root request into a normalized, uniform ROC address space, using the minimal trade representation described above.  In that way, any endpoint needing to retrieve the FX trade representation can generate a request which is resolved in the inserted '''TradeBridge''' space.
+
+{svg}res:/doc/diary/TradeBridgeOverlay.svg{/svg}
+
+However, before I tried this approach first, I wanted to get a single builder endpoint working.  For that, I could simply use pass-by-value argument, and therefore not need the complexity of a bespoke bridge overlay at this point.  One factor in that decision was that I couldn't find a tutorial or other documentation in the physical construction guide to show me how to write an endpoint that dynamically injects a space into the scope of it's sub-requests. Rather than spending a lot of time reverse - engineering the HTTPBridge overlay, I decided to park this idea for now, cool though it is.

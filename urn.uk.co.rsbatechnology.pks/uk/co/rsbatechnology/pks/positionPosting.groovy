@@ -22,25 +22,19 @@ try {
 	throw nkfe
 }
 
-println "positionDelta:"+positionDelta
-
 IHDSNode positionIdentifier = positionDelta.getFirstNode("//@id")
 
-println "positionIdentifier"+positionIdentifier
 def positionIdentifierURI = "pos:"+positionIdentifier.value
 
 IHDSNodeList deltaAmountNodes = positionDelta.getNodes("//deltaAmounts/deltaAmount")
-println "deltaAmountNodes:"+deltaAmountNodes
 
 // Obtain existing representation of affected position, if any
 if (context.exists(positionIdentifierURI)) 
 {
-	println "Position exists"
 	position = context.source(positionIdentifierURI, IHDSNode.class)
 	currentPositionAmountsNodes = position.getNodes("//amounts/amount")
 		
-} else
-	println "Position non-existent"
+}
 
 // Initialise denominated currency amounts structure for updated position 
 b = new HDSBuilder()
@@ -49,7 +43,6 @@ b.pushNode("amounts")
 // Perform posting action
 for (deltaAmountNode in deltaAmountNodes)
 {
-	println "Processing deltaAmountNode:"+deltaAmountNode
 	deltaAction = deltaAmountNode.getFirstValue("//action")
 	deltaAmountType = deltaAmountNode.getFirstValue("//type")
 	deltaAmountSymbol = deltaAmountNode.getFirstValue("//symbol")
@@ -93,15 +86,12 @@ for (deltaAmountNode in deltaAmountNodes)
 	{
 		case "CREDIT":
 			updatedPositionAmount = currentPositionAmount + deltaAmount.abs()
-			println "CREDIT updatedPositionAmount"+updatedPositionAmount
 			break
 		case "DEBIT":
 			updatedPositionAmount = currentPositionAmount - deltaAmount.abs()
-			println "DEBIT updatedPositionAmount"+updatedPositionAmount
 			break
 		case "SYNC":
 			updatedPositionAmount = deltaAmount
-			println "SYNC updatedPositionAmount"+updatedPositionAmount
 			break
 		default:
 			nkfe = new NKFException("pks:positionposting:invaliddeltaaction",
@@ -122,7 +112,6 @@ for (deltaAmountNode in deltaAmountNodes)
 }
 
 IHDSNode updatedPositionAmountsNode = b.getRoot()
-println "updatedPositionAmountsNode"+updatedPositionAmountsNode
 
 // Use active:position service to persist updated position
 sinkPositionRequest = context.createRequest(positionIdentifierURI)

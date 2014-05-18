@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+	Mapper endpoint configuration for PKS Currency Position Builder endpoints
+-->
+<config>
+	<endpoint>
+		<description>Open settlement position builder
+		</description>
+		<verbs>SOURCE</verbs>
+		<grammar>
+			<active>
+				<identifier>active:settlementPositionBuilder</identifier>
+				<argument name="operand" desc="Literal representation of a source transaction" />
+			</active>
+		</grammar>
+		<request>
+			<identifier>active:groovy</identifier>
+			<argument name="operator">res:/uk/co/rsbatechnology/pks/builders/settlementPositionBuilder.groovy</argument>
+			<argument name="sourceTransaction">arg:operand</argument>
+		</request>
+	</endpoint>
+</config>

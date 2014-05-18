@@ -1,0 +1,121 @@
+=Part 10: Settlement Position Builder=
+
+Now we come to the core of the PKS application: the ability to generate new position deltas from incoming source trades and transactions.  We know from the [[part1#2.2_Position_Building | requirements]] that the application must be able to support multiple position builders, each generating position deltas with different '''positionType''' identifiers.
+
+==The active:settlementPositionBuilder endpoint high-level design and grammar==
+
+The first builder endpoint is responsible for calculating and SINKing open settlement positions from position-originating transactions.  A service endpoint identifier of '''active:settlementPositionBuilder''' seems appropriate, to set up the naming pattern of ''active:<builder type>PositionBuilder''
+
+The input into this service needs to provide a representation of a source transaction to enable the builder logic to calculate the correct position deltas.  From [[doc:uk:co:rsbatechnology:pks:diary:part9 | Part9]], I had decided to use a literal, pass-by-value argument, '''operand''' for now, just to get the builder endpoint working.
+
+The endpoint response would be a HDS list of generated (and SINKed) position delta records.  These can then be collated across all position builders, and then iteratively passed to the '''active:positionPosting''' endpoint.  But that is still to come ...
+
+The grammar for the '''active:settlementPositionBuilder''' logical endpoint requires a pass-by-value representation of a source transaction, which is passed to the physical '''settlementPositionBuilder.groovy''' script:
+
+{xml}
+	<endpoint>
+		<description>Open settlement position builder
+		</description>
+		<verbs>SOURCE</verbs>
+		<grammar>
+			<active>
+				<identifier>active:settlementPositionBuilder</identifier>
+				<argument name="operand" desc="Literal representation of a source transaction" />
+			</active>
+		</grammar>
+		<request>
+			<identifier>active:groovy</identifier>
+			<argument name="operator">res:/uk/co/rsbatechnology/pks/builders/settlementPositionBuilder.groovy</argument>
+			<argument name="sourceTransaction">arg:operand</argument>
+		</request>
+	</endpoint>
+{/xml}
+
+==Implementation of active:settlementPositionBuilder==
+
+Even before I started writing the groovy script for this module, I knew that there were going to be common functionality across different position builders.  But, it's good to start with a minimal viable implementation first, get some XUnit tests working, then think about re-factoring.
+
+The first part of the implementation is to determine what the endpoint is being asked to do ... in this case we need to extract the trade details from the HDS source transaction structure.
+
+{java}
+// Obtain source FX transaction representation
+IHDSNode sourceTransaction = context.source("arg:sourceTransaction") 
+// Extract common attributes from transaction representation
+businessArea = sourceTransaction.getFirstValue("//lifecycle/businessArea")
+location = sourceTransaction.getFirstValue("//lifecycle/location")
+transactionID = sourceTransaction.getFirstValue("//lifecycle/transactionID")
+version = sourceTransaction.getFirstValue("//lifecycle/version")
+lifecycleType = sourceTransaction.getFirstValue("//lifecycle/lifecycleType")
+account = sourceTransaction.getFirstValue("//parties/counterparty")
+{/java}
+
+The script then has to branch depending on the type of source transaction.  For now, the builder only supports FX spot & outright trade types .. anything else should be ignored.  
+
+{java}
+//Build response with list of position delta identifiers
+b = new HDSBuilder()
+b.pushNode("positionDeltas")
+
+if (sourceTransaction.getFirstNode("//fxspotoutright") != null) {
+	// Generate deltas
+	...
+} 
+
+//Build response with list of position delta identifiers
+context.createResponseFrom(b.getRoot())
+{/java}
+
+If we know we have a spot or outright, again we need to extract the other trade attributes before we can calculate changes to positions:
+
+{java}
+	valueDate = sourceTransaction.getFirstValue("//fxspotoutright/valueDate")
+	// TODO: Ensure (or convert) this is in correct format: yyyy.mm.dd
+	counterpartyBuysBase = sourceTransaction.getFirstValue("//fxspotoutright/counterpartyBuysBase")
+	baseCurrencySymbol = sourceTransaction.getFirstValue("//baseCurrency/symbol")
+	baseCurrencySettlementAmount = Float.parseFloat(sourceTransaction.getFirstValue("//baseCurrency/settlementAmount"))
+	baseCurrencySettlementAmountUSD = Float.parseFloat(sourceTransaction.getFirstValue("//baseCurrency/settlementAmountUSD"))
+	termCurrencySymbol = sourceTransaction.getFirstValue("//termCurrency/symbol")
+	termCurrencySettlementAmount = Float.parseFloat(sourceTransaction.getFirstValue("//termCurrency/settlementAmount"))
+	termCurrencySettlementAmountUSD = Float.parseFloat(sourceTransaction.getFirstValue("//termCurrency/settlementAmountUSD"))
+	
+	sourceTransactionNode = createSourceTransactionNode(transactionID, version)
+	deltaSequence = System.currentTimeMillis()
+{/java}
+
+Then we need to add value, by calculating changes to position amounts and generating new position delta representations.  I factored out this logic into two groovy script functions called from the main code.  Note that the functions round the (float) trade amount to an integer position amount, rounded up to next currency unit:
+
+{java}
+def generateOpenDeltaAmountsForCurrency(counterpartyBuysCurrency, symbol, amount, amountUSD) {
+	HDSBuilder db = new HDSBuilder()
+	db.pushNode("deltaAmounts")
+	// SETTLEMENT
+	db.pushNode("deltaAmount")
+	def (String action, int value) = calculateOpenDeltaAmount(counterpartyBuysCurrency, amount)
+	db.addNode("action", action)
+	db.addNode("type", "SETTLEMENT")
+	db.addNode("symbol", symbol)
+	db.addNode("value", value)
+	db.popNode()
+	// BASE
+	db.pushNode("deltaAmount")
+	(action, value) = calculateOpenDeltaAmount(counterpartyBuysCurrency, amountUSD)
+	db.addNode("action", action)
+	db.addNode("type", "BASE")
+	db.addNode("symbol", "USD")
+	db.addNode("value", value)
+	db.popNode()
+	return db.getRoot()
+}
+
+def calculateOpenDeltaAmount(counterpartyBuysCurrency, settlementAmount) {
+	action = counterpartyBuysCurrency ? "CREDIT" : "DEBIT"
+	value = settlementAmount.round(0)+1  // Use conservative rounding up to nearest integer
+	return [action, value]
+}
+{/java}
+
+The script then builds and persists two position deltas by forming sub-requests to the '''active:positionDelta''' service endpoint.  Finally, it constructs a HDS structure with the identities of the created position deltas and returns that structure as the endpoint's response.
+
+
+
+
