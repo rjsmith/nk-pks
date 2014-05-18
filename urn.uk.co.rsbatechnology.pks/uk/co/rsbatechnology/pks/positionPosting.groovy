@@ -118,6 +118,7 @@ sinkPositionRequest = context.createRequest(positionIdentifierURI)
 sinkPositionRequest.setVerb(INKFRequestReadOnly.VERB_SINK)
 sinkPositionRequest.addPrimaryArgument(updatedPositionAmountsNode)
 try {
+	// Return updated position representation as response
 	sinkPositionResponse = context.issueRequestForResponse(sinkPositionRequest)
 	context.createResponseFrom(sinkPositionResponse)
 } catch (Exception e)

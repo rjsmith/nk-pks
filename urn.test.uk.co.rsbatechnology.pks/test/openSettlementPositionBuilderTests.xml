@@ -1,0 +1,50 @@
+<testlist>
+	<import>res:/org/netkernel/xml/assert/assertLibrary.xml</import>
+	<test name="Settlement Position Builder position delta test with no existing positions">
+		<setup>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/test/deleteAllPositions.dpml</argument>
+		</setup>
+		<request>
+			<identifier>active:settlementPositionBuilder</identifier>
+			<verb>SOURCE</verb>
+			<argument name="operand">
+				<literal type="hds">
+					<trade>
+						<lifecycle>
+							<businessArea>EFX</businessArea>
+							<location>LDN</location>
+							<transactionID>997cc866-3cd5-40c7-bb63-4e1c608b80f9</transactionID>
+							<version>1</version>
+							<lifecycleType>PRE_STP</lifecycleType>
+						</lifecycle>
+						<parties>
+							<counterparty>ef79b770-b605-11e3-a5e2-0800200c9a66</counterparty>
+						</parties>
+						<fxspotoutright>
+							<baseCurrency>
+								<symbol>EUR</symbol>
+								<settlementAmount>10000.00</settlementAmount>
+								<settlementAmountUSD>13713.00</settlementAmountUSD>
+							</baseCurrency>
+							<termCurrency>
+								<symbol>GBP</symbol>
+								<settlementAmount>8166.69</settlementAmount>
+								<settlementAmountUSD>13713.00</settlementAmountUSD>
+							</termCurrency>
+							<counterpartyBuysBase>true</counterpartyBuysBase>
+							<valueDate>2014-05-28</valueDate>
+						</fxspotoutright>
+					</trade>	
+				</literal>
+			</argument>
+		</request>
+		<teardown>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/test/deleteAllPositions.dpml</argument>
+		</teardown>
+		<assert>
+			<xpath>count(//positionDelta)=2</xpath>
+		</assert>
+	</test>
+</testlist>
