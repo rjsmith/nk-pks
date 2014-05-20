@@ -1,0 +1,27 @@
+=Part 11: Composing the PKS application=
+
+I had minimal working implementations of four key physical parts of the PKS system:
+
+* Currency Position Resource Model
+* Position Delta Resource Model
+* Position posting service
+* Open settlement position builder
+
+I also had written logical endpoints that described the external-facing request grammar for each of these endpoints, and a number of XUnit tests, all passing.  I had reached the end of the first "C" (Construct) in the ROC three "C"s design philosophy.  Next up, composition.
+
+==Sub-spaces==
+
+First, I wanted to split out the endpoints into separate sub-spaces within the application.  This would help encapsulate their functionality from each other, and allow for future architectural changes in the Constraint phase, such as adding source transaction validation, consolidated exception handling etc).  I decided to start by defining multiple spaces in the same module for now.  Most of the work was in the main PKS module's '''module.xml''' file, making sure I had the right <code><import></code> statements for each mapper config.  This took about 15 minutes to do, including getting all the tests passing again.
+
+The PKS module space structure diagram now looked like this ... starting to look like a real ROC application!
+
+{svg}res:/doc/diary/part11ssd.svg{/svg}
+
+==PKS front-end space==
+
+I needed another rootspace that would tie the functionality in the other spaces together, acting as the public front-end to the PKS application.  One of its endpoints receives a source transaction, collects position delta identifiers from all position builders, and then iteratively call the '''active:positionPosting''' service for each of these deltas, to ensure the affected position representations are updated.
+
+First, define the new rootspace and the logical endpoint that defines the externally-visible request grammar.
+
+
+

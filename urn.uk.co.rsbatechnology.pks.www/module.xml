@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module version="2.0">
+   <meta>
+      <identity>
+         <uri>urn:uk:co:rsbatechnology:pks:www</uri>
+         <version>0.0.1</version>
+      </identity>
+      <info>
+         <name>PKS Web front-end</name>
+         <description>Position Keeping Server application web simulation harness</description>
+         <icon>res:/pks/pub/icon.png</icon>
+      </info>
+   </meta>
+   <system>
+      <dynamic/>
+   </system>
+   <rootspace name="PKS Web front-end - Development Space" uri="urn:uk:co:rsbatechnology:pks:www">
+      <fileset>
+         <regex>res:/etc/system/SimpleDynamicImportHook.xml</regex>
+      </fileset>
+      <mapper>
+         <config>
+            <endpoint>
+               <grammar>res:
+                  <group name="service">/pks/sendrandomtrade</group>
+               </grammar>
+               <request>
+                  <identifier>active:groovy</identifier>
+                  <argument name="operator">res:/resources/endpoints/sendRandomTrade.groovy</argument>
+               </request>
+            </endpoint>
+            <endpoint>
+               <grammar>res:
+                  <group name="service">/pks/displaypositions</group>
+               </grammar>
+               <request>
+                  <identifier>active:dpml</identifier>
+                  <argument name="operator">res:/resources/endpoints/displayPositions.dpml</argument>
+               </request>
+            </endpoint>
+            <endpoint>
+               <grammar>res:
+                  <group name="service">/pks/clearall</group>
+               </grammar>
+               <request>
+                  <identifier>active:clearPKSCache</identifier>
+               </request>
+            </endpoint>
+         </config>
+         <space>
+            <fileset>
+               <regex>res:/resources/endpoints/.*</regex>
+            </fileset>
+           <import>
+               <uri>urn:uk:co:rsbatechnology:pks:frontend</uri>
+            </import>
+            <import>
+               <uri>urn:org:netkernel:lang:groovy</uri>
+            </import>
+				<import>
+					<uri>urn:org:netkernel:lang:dpml</uri>
+			</import>
+			<import><uri>urn:org:netkernel:xml:saxon</uri></import>				
+         </space>
+      </mapper>
+      <fileset><!--Icon-->
+         <regex>res:/pks/pub/(.*)</regex>
+         <rewrite>res:/resources/pub/$1</rewrite>
+      </fileset>
+   </rootspace>
+</module>

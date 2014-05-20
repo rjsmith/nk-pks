@@ -5,5 +5,6 @@
 	<import>res:/test/positionDeltaCacheTests.xml</import>
 	<import>res:/test/positionPostingTests.xml</import>
 	<import>res:/test/openSettlementPositionBuilderTests.xml</import>
+	<import>res:/test/frontendTests.xml</import>
 </testlist>
 

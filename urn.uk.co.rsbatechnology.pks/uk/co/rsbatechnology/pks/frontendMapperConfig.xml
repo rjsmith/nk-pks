@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+	Mapper endpoint configuration for PKS Front-end rootspace endpoints
+-->
+<config>
+	<endpoint>
+		<description>Calculate positions for a position-originating transaction
+		</description>
+		<verbs>SOURCE</verbs> 
+		<grammar>
+			<active>
+				<identifier>active:updatePositions</identifier>
+				<argument name="operand" desc="Literal representation of a source transaction" />
+			</active>
+		</grammar>
+		<request>
+			<identifier>active:groovy</identifier>
+			<argument name="operator">res:/uk/co/rsbatechnology/pks/frontend/updatePositions.groovy</argument>
+			<argument name="sourceTransaction">arg:operand</argument>
+		</request>
+	</endpoint>
+	<endpoint>
+		<description>Get representation of all positions in cache
+		</description>
+		<verbs>SOURCE</verbs> 
+		<grammar>
+			<active>
+				<identifier>active:getAllPositions</identifier>
+			</active>
+		</grammar>
+		<request>
+			<identifier>active:allPositions</identifier>
+		</request>
+	</endpoint>
+	<endpoint>
+		<description>Delete all persisted positions and deltas
+		</description>
+		<verbs>SOURCE</verbs> 
+		<grammar>
+			<active>
+				<identifier>active:clearPKSCache</identifier>
+			</active>
+		</grammar>
+		<request>
+			<identifier>active:dpml</identifier>
+			<argument name="operator">res:/uk/co/rsbatechnology/pks/frontend/clearPKSCache.dpml</argument>
+		</request>
+	</endpoint>
+</config>

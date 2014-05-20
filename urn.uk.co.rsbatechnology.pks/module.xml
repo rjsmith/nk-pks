@@ -13,30 +13,33 @@
 	<system>
 		<dynamic />
 	</system>
+	<rootspace name="PKS Front-end Rootspace" uri="urn:uk:co:rsbatechnology:pks:frontend"
+		public="true">
+		<mapper>
+			<config>
+				<import>res:/uk/co/rsbatechnology/pks/frontendMapperConfig.xml</import>
+			</config>
+			<space>
+				<import><uri>urn:uk:co:rsbatechnology:pks:builders</uri></import>
+				<import><uri>urn:uk:co:rsbatechnology:pks:posting</uri></import>
+				<import><uri>urn:uk:co:rsbatechnology:pks:position</uri></import>
+				<import><uri>urn:uk:co:rsbatechnology:pks:delta</uri></import>
+				<fileset>
+					<regex>res:/uk/co/rsbatechnology/pks/.*</regex>
+				</fileset>
+				<import>
+					<uri>urn:org:netkernel:lang:dpml</uri>
+				</import>
+				<!-- Enables active:groovy to be resolvable -->
+				<import><uri>urn:org:netkernel:lang:groovy</uri></import>
+			</space>
+		</mapper>
+	</rootspace>
 	<rootspace name="PKS Position Cache Rootspace" uri="urn:uk:co:rsbatechnology:pks:position"
 		public="true">
 		<mapper>
 			<config>
 				<import>res:/uk/co/rsbatechnology/pks/positionCacheMapperConfig.xml</import>
-				<import>res:/uk/co/rsbatechnology/pks/positionDeltaCacheMapperConfig.xml</import>
-				<import>res:/uk/co/rsbatechnology/pks/positionBuilderMapperConfig.xml</import>
-				<endpoint>
-					<id>pks:positionPosting</id>
-					<description>Posts a position delta to the position cache
-					</description>
-					<verbs>SOURCE</verbs>
-					<grammar>
-						<active>
-							<identifier>active:positionPosting</identifier>
-							<argument name="operand" desc="Identity of Position Delta resource to be posted" />
-						</active>
-					</grammar>
-					<request>
-						<identifier>active:groovy</identifier>
-						<argument name="operator">res:/uk/co/rsbatechnology/pks/positionPosting.groovy</argument>
-						<argument name="operand">arg:operand</argument>
-					</request>
-				</endpoint>				
 			</config>
 			<space>
 				<fileset>
@@ -81,7 +84,90 @@
 			</space>
 		</mapper>
 	</rootspace>
-		<rootspace uri="urn:uk:co:rsbatechnology:pks:diary">
+	<rootspace name="PKS Position Delta Cache Rootspace" uri="urn:uk:co:rsbatechnology:pks:delta"
+		public="true">
+		<mapper>
+			<config>
+				<import>res:/uk/co/rsbatechnology/pks/positionDeltaCacheMapperConfig.xml</import>
+			</config>
+			<space>
+				<fileset>
+					<regex>res:/uk/co/rsbatechnology/pks/.*</regex>
+				</fileset>
+				<!-- Use PDS as our persistence service -->
+				<import>
+					<uri>urn:org:netkernel:mod:pds</uri>
+				</import>
+				<import>
+					<uri>urn:org:netkernel:mod:pds:rdbms:local</uri>
+				</import>
+				<!-- Literal PDS configuration -->
+				<literal type="xml" uri="res:/etc/pdsConfig.xml">
+					<config>
+						<zone>global:pks</zone>
+					</config>
+				</literal>
+				<!-- Enables active:groovy to be resolvable -->
+				<import><uri>urn:org:netkernel:lang:groovy</uri></import>
+				<import><uri>urn:org:netkernel:lang:dpml</uri></import>
+				<!--  XSLT2 and XRL used in active:allPositions service -->
+				<import><uri>urn:org:netkernel:xml:saxon</uri></import>				
+				<import><uri>urn:org:netkernel:lang:xrl</uri></import>				
+			</space>
+		</mapper>
+	</rootspace>
+	<rootspace name="PKS Position Posting Rootspace" uri="urn:uk:co:rsbatechnology:pks:posting"
+		public="true">
+		<mapper>
+			<config>
+				<endpoint>
+					<id>pks:positionPosting</id>
+					<description>Posts a position delta to the position cache
+					</description>
+					<verbs>SOURCE</verbs>
+					<grammar>
+						<active>
+							<identifier>active:positionPosting</identifier>
+							<argument name="operand" desc="Identity of Position Delta resource to be posted" />
+						</active>
+					</grammar>
+					<request>
+						<identifier>active:groovy</identifier>
+						<argument name="operator">res:/uk/co/rsbatechnology/pks/positionPosting.groovy</argument>
+						<argument name="operand">arg:operand</argument>
+					</request>
+				</endpoint>				
+			</config>
+			<space>
+				<fileset>
+					<regex>res:/uk/co/rsbatechnology/pks/.*</regex>
+				</fileset>
+				<!-- Position Posting requires access to Position and Position Delta Resource Spaces -->
+				<import><uri>urn:uk:co:rsbatechnology:pks:position</uri></import>
+				<import><uri>urn:uk:co:rsbatechnology:pks:delta</uri></import>
+				<!-- Enables active:groovy to be resolvable -->
+				<import><uri>urn:org:netkernel:lang:groovy</uri></import>
+			</space>
+		</mapper>
+	</rootspace>
+	<rootspace name="PKS Position Builder Rootspace" uri="urn:uk:co:rsbatechnology:pks:builders"
+		public="true">
+		<mapper>
+			<config>
+				<import>res:/uk/co/rsbatechnology/pks/positionBuilderMapperConfig.xml</import>
+			</config>
+			<space>
+				<fileset>
+					<regex>res:/uk/co/rsbatechnology/pks/.*</regex>
+				</fileset>
+				<!-- Position Builders requires access to Position Delta Resource Space -->
+				<import><uri>urn:uk:co:rsbatechnology:pks:delta</uri></import>
+				<!-- Enables active:groovy to be resolvable -->
+				<import><uri>urn:org:netkernel:lang:groovy</uri></import>
+			</space>
+		</mapper>
+	</rootspace>
+		<rootspace name="PKS Diary Rootspace"  uri="urn:uk:co:rsbatechnology:pks:diary">
 		<!--Declare the documentation for publication into the doc system -->
 		<fileset>
 			<regex>res:/etc/system/(Books|Docs).xml</regex>

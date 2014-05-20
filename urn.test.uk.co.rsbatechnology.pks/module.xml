@@ -21,7 +21,19 @@
 			<regex>res:/test/.*</regex>
 		</fileset>
 		<import>
+			<uri>urn:uk:co:rsbatechnology:pks:frontend</uri>
+		</import>
+		<import>
 			<uri>urn:uk:co:rsbatechnology:pks:position</uri>
+		</import>
+		<import>
+			<uri>urn:uk:co:rsbatechnology:pks:delta</uri>
+		</import>
+		<import>
+			<uri>urn:uk:co:rsbatechnology:pks:posting</uri>
+		</import>
+		<import>
+			<uri>urn:uk:co:rsbatechnology:pks:builders</uri>
 		</import>
 		<import>
 			<uri>urn:org:netkernel:xml:core</uri>

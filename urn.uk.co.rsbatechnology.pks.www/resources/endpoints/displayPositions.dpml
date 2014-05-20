@@ -1,0 +1,22 @@
+<sequence>
+	<request assignment="response">
+		<identifier>active:xslt2</identifier>
+		<argument name="operator">res:/resources/endpoints/allPositionHTMLTransform.xsl</argument>
+		<argument name="operand">
+			<request>
+				<identifier>active:getAllPositions</identifier>
+			</request>
+		</argument>		
+	</request>
+	<modify-response assignment="response">
+  <operand>this:response</operand>
+  <config>
+    <literal type="xml">
+      <config>
+        <header name="mime">text/html</header>
+        <expiry method="ALWAYS" />
+      </config>
+    </literal>
+  </config>
+</modify-response>
+</sequence>

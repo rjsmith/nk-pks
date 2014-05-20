@@ -76,4 +76,11 @@
 		<uri>res:/doc/diary/part10.txt</uri>
 		<keywords />
 	</doc>
+	<doc>
+		<id>doc:uk:co:rsbatechnology:pks:diary:part11</id>
+		<title>Part 11: Composing the PKS application</title>
+		<desc>Creating a minimal working PKS application by composing physical endpoints together</desc>
+		<uri>res:/doc/diary/part11.txt</uri>
+		<keywords />
+	</doc>
 </docs>
