@@ -19,9 +19,98 @@ The PKS module space structure diagram now looked like this ... starting to look
 
 ==PKS front-end space==
 
-I needed another rootspace that would tie the functionality in the other spaces together, acting as the public front-end to the PKS application.  One of its endpoints receives a source transaction, collects position delta identifiers from all position builders, and then iteratively call the '''active:positionPosting''' service for each of these deltas, to ensure the affected position representations are updated.
+I needed another rootspace that would tie the functionality in the other spaces together, acting as the public front-end to the PKS application.  It would contain the following service endpoints:
 
-First, define the new rootspace and the logical endpoint that defines the externally-visible request grammar.
+{| style="border-collapse: separate; border-spacing: 0; border: 1px solid #000; padding: 0"
+! Service URI
+! Arguments
+! Description
+|-
+|'''active:updatePositions'''
+|'''operand''' (FX transaction representation)
+| Receives a source transaction, collects position delta identifiers from all position builders, and then iteratively call the '''active:positionPosting''' service for each of these deltas, to ensure the affected position representations are updated.
+|-
+| '''active:getAllPositions'''
+| n/a
+| Returns list of position representations held in cache
+|-
+| '''active:clearPKSCache'''
+| n/a
+| Deletes all persisted positions and position deltas
+|}
 
+First, define the new rootspace and the logical endpoint that defines the externally-visible request grammar.  The '''urn:uk:co:rsbatechnology:pks:frontend''' rootspace definition uses a Mapper Overlay to set up its logical endpoints. It must also import the other PKS back-end spaces to expose their services to the front-end co-ordinating endpoints:
 
+{xml}
+				<import><uri>urn:uk:co:rsbatechnology:pks:builders</uri></import>
+				<import><uri>urn:uk:co:rsbatechnology:pks:posting</uri></import>
+				<import><uri>urn:uk:co:rsbatechnology:pks:position</uri></import>
+				<import><uri>urn:uk:co:rsbatechnology:pks:delta</uri></import>
+{/xml}
 
+The '''frontendMapperConfig.xml''' config file sets up the front end space endpoints, as above.  The updated space structure diagram verifies that the front-end space calls through to the back-end PKS application spaces.
+
+{svg}res:/doc/diary/part11ssd2.svg{/svg}
+
+== Front-end active:updatePositions endpoint: Groovy version ==
+
+My initial go at implementing this endpoint was written in Groovy; it simply had to build and send a sub-request to the open settlement position builder, process the returned list of position deltas, using each one to post to the position cache.
+
+{java}
+// Obtain source FX transaction representation
+IHDSNode sourceTransaction = context.source("arg:sourceTransaction")
+ 
+// Create request to Open Settlement Position Builder
+INKFRequest builderRequest = context.createRequest("active:settlementPositionBuilder")
+builderRequest.addArgumentByValue("operand", sourceTransaction)
+IHDSNode generatedDeltas = context.issueRequest(builderRequest)
+
+// Post these positions to the position cache
+String[] deltaList = generatedDeltas.getValues("//positionDelta")
+
+for (deltaIdentifier in deltaList)
+{
+	// Build position posting request
+	// Issue each posting request asynchronously to improve posting performance across threads
+	INKFRequest postingRequest = context.createRequest("active:positionPosting")
+	postingRequest.addArgument("operand", deltaIdentifier)
+	context.issueAsyncRequest(postingRequest)
+}
+
+context.createResponseFrom(generatedDeltas)
+{/java}
+
+I wrote an XUnit test, to assert the number of position deltas created.  This minimal implementation worked fine, but was not terribly dynamic ... what if we added a new position builder?  Sure, we could edit this groovy script, but I think NK is capable of something more elegant.  What I would really like is for the '''active:updatePositions''' endpoint to automagically discover all position builder endpoints deployed in the application, call them in parallel, and then post their deltas if no exceptions occurred.  I added this close to the top of my to-do list.
+
+== The active:getAllPositions and active:clearPKSCache endpoints==
+
+The other two front-end service endpoints were even easier.
+
+The '''active:getAllPositions''' simply calls through to the '''active:allPositions''' endpoint in the imported position resource model space.  
+
+The '''active:clearPKSCache''' endpoint uses a short DPML script to request the '''active:delete...''' endpoints in the position and position delta spaces:
+
+{xml}
+<sequence>
+	<request assignment="response">
+		<verb>DELETE</verb>
+		<identifier>active:deleteAllPositions
+		</identifier>
+	</request>
+	<request assignment="response">
+		<verb>DELETE</verb>
+		<identifier>active:deleteAllPositionDeltas
+		</identifier>
+	</request>
+</sequence>
+{/xml}
+
+== Extensions ==
+
+With the basic implementations of the three front-end endpoints complete, I could see how you could add additional validation and authentication functions without needing to touch these endpoints directly, by following the [[doc:patterns:gatekeeper | Gatekeeper overlay pattern]].  These could be implemented using the NetKernel standard module [[doc:logicalreference:module:standard:logical:pluggable-overlay | Pluggable Overlay]], which uses dedicated endpoints in the wrapped space to control access to the other endpoints in that space.
+
+This could be further combined within a [[doc:logicalreference:module:standard:logical:branch-merge | Branch-Merge overlay]], which would allow different pluggable overlays to be called for different endpoints within the front=end space.
+
+<blockquote>
+What is becoming apparent to me is that the physical endpoints that do the actual authentication or validation only need to be concerned with the business logic of their function, and thus can be pretty simple, and certainly testable in isolation.  The complexity of deciding which endpoints require which authentication and validation (and logging, audit etc) is transformed into composing chains of overlays together in front of the wrapped space (in which the core endpoints are not "aware" of any of this structure).  When you also consider that the definition of these overlay structures can themselves be dynamically selected or generated by other endpoints (perhaps based on external factors such as dev/testing/production environment), the possibilities become endless!
+</blockquote>

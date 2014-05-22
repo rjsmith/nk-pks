@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="US-ASCII">
+<title>NK-PKS Trade Simulator</title>
+<script>
+var xmlhttp;
+if (window.XMLHttpRequest)
+  {// code for IE7+, Firefox, Chrome, Opera, Safari
+  xmlhttp=new XMLHttpRequest();
+  }
+else
+  {// code for IE6, IE5
+  xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+  }
+
+var keepSending = false;
+var sendTrades
+
+function sendRandomTrade() {
+	xmlhttp.open("GET","../sendrandomtrade", false);
+	xmlhttp.send();
+	document.getElementById("transactionID").innerHTML = xmlhttp.responseText;
+}
+
+function startRandomTrade() {
+	intervalInMS = document.getElementById("sendIntervalMS").value
+	sendTrades = setInterval(sendRandomTrade, intervalInMS);
+}
+
+function stopRandomTrade() {
+	clearInterval(sendTrades)
+}
+
+
+
+</script>
+
+</head>
+<body>
+<p>NK-PKS Trade Simulator</p>
+<p />
+<button type="button" onclick="sendRandomTrade()">Send 1 trade</button>
+<button type="button" onclick="startRandomTrade()">Start sending</button>
+<input id="sendIntervalMS" type="text" size="10" value="1000" /> millis&nbsp;&nbsp;
+<button type="button" onclick="stopRandomTrade()">Stop sending</button>
+<div id="transactionID" />
+
+
+</body>
+</html>
