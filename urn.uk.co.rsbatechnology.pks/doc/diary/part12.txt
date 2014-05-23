@@ -1,0 +1,156 @@
+=Part 12: Web simulator=
+
+Up to this point, the only method of exercising the PKS application was to build and run XUnit tests.  I wanted to create a separate simulator that would demonstrate its real performance characteristics, including caching, GC etc. I also wanted a simple web front end which could display the state of the position cache, and provide control over the persistence of positions and position deltas.  
+
+==The urn.uk.co.rsbatechnology.pks.www module==
+
+I quickly created a new folder and '''module.xml''' for the '''urn.uk.co.rsbatechnology.pks.www''' module, using the [[http://localhost:1060/tools/newmodule/ | New Module Wizard]]. It added a '''etc/system/SimpleDynamicImportHook.xml''' file which automatically imports this module into the NetKernel back-end admin fulcrum:
+
+{xml}
+<connection><type>HTTPAdminFulcrum</type></connection>
+{/xml}
+
+The module imports the urn:uk:co:rsbatechnology:pks:frontend rootspace from the main PKS module, to give it access to the front-end services.  The overall space diagram looks likes this now:
+
+{svg}res:/doc/diary/part12ssd.svg{/svg}
+
+==Send Random Trade Simulator Webpage==
+
+I wrote a simple '''resources/pub/simulator.html''' static web page with a few buttons that provides actions to send a single trade, or generate a periodic series of trades every ''n'' milliseconds.  Javascript uses ajax to send the service http request to the NK server:
+
+{java}
+var keepSending = false;
+var sendTrades
+
+function sendRandomTrade() {
+	xmlhttp.open("GET","../sendrandomtrade", false);
+	xmlhttp.send();
+	document.getElementById("transactionID").innerHTML = xmlhttp.responseText;
+}
+
+function startRandomTrade() {
+	intervalInMS = document.getElementById("sendIntervalMS").value
+	sendTrades = setInterval(sendRandomTrade, intervalInMS);
+}
+
+function stopRandomTrade() {
+	clearInterval(sendTrades)
+}
+
+function displayPositions() {
+	xmlhttp.open("GET","../displaypositions", false);
+	xmlhttp.send();
+	document.getElementById("positionsTable").innerHTML = xmlhttp.responseText;
+}
+
+function clearPKSCache() {
+	xmlhttp.open("GET","../clearall", false);
+	xmlhttp.send();
+}
+
+{/java}
+
+<blockquote>
+Note the <code>../sendrandomtrade</code> relative URL in the Ajax http call.  I wanted the server call sent to <code>/pks/sendrandomtrade</code>, not to <code>/pks/pub/sendrandomtrade</code>.
+</blockquote>
+
+To enable the '''simulator.html''' to be accessed through the admin fulcrum, I had to add a <code><fileset></code> endpoint to map the physical folder in the module to the web URL (the Backend Fulcrum's HTTPBridge maps anything <code>http:<admin fulcrum root>/</code> to the internal <code>res:</code> schema).
+
+{xml}
+      <fileset>
+         <regex>res:/pks/pub/(.*)</regex>
+         <rewrite>res:/resources/pub/$1</rewrite>
+      </fileset>
+{/xml}
+
+The simulator page could now be reached by this url on my computer:  http://localhost:1060/pks/pub/simulator.html , and looked like this:
+
+{image}/doc/source/img:uk:co:rsbatechnology:pks:diary:part12:simulator{/image}
+
+== The sendRandomTrade.groovy endpoint ==
+
+The '''simulator.html''' page generates server requests to 
+
+{literal}
+http://localhost:1060/pks/sendrandomtrade 
+{/literal}
+
+We need a logical endpoint to map this URL to a physical endpoint that will implement this function:
+
+{xml}
+            <endpoint>
+               <grammar>res:
+                  <group name="service">/pks/sendrandomtrade</group>
+               </grammar>
+               <request>
+                  <identifier>active:groovy</identifier>
+                  <argument name="operator">res:/resources/endpoints/sendRandomTrade.groovy</argument>
+               </request>
+            </endpoint>
+{/xml}
+
+Finally, I wrote the '''sendRandomTrade.groovy''' script to build a HDS-based FX trade representation, with semi-randomised data fields.  The endpoint returns the random-generated transactionID, for display on the simulator.html webpage.  To limit the absolute number of positions being created, I coded the script to select owning counterparty account UUIDs from a pre-generated list of 5 UUID strings, and selected the currency pair from two pre-defined currency lists.
+
+Skipping out the <code>generateFXTrade()</code> function that generates the trade representation, the script looked like this:
+
+{java}
+(trade, transactionID) = generateFXTrade()
+request.addArgumentByValue("operand", trade)
+context.issueRequest(request)
+
+INKFResponse response = context.createResponseFrom(transactionID)
+response.setExpiry(INKFResponse.EXPIRY_ALWAYS) // Force NK to always call this endpoint, instead of using representation cache
+{/java}
+
+<blockquote>
+Note the final <code>response.setExpiry(INKFResponse.EXPIRY_ALWAYS)</code> line. Initially, I noticed that repeated calls to '''sendRandomTrade''' were not executing any code; instead the first transactionID response was being returned from the NK representation cache! The script had to tell NK not to cache the response, to ensure NK will call through to the script on every request.
+</blockquote>
+
+==Displaying Positions==
+
+The web app uses the PKS front-end '''active:getAllPositions''' service to obtain a representation of all persisted positions, which is then transformed via XSLT2 into a simple html table.  The www module mapper configuration sets up a logical endpoint to call through to the DPML script that implements the function:
+
+{xml}
+            <endpoint>
+               <grammar>res:
+                  <group name="service">/pks/displaypositions</group>
+               </grammar>
+               <request>
+                  <identifier>active:dpml</identifier>
+                  <argument name="operator">res:/resources/endpoints/displayPositions.dpml</argument>
+               </request>
+            </endpoint>
+{/xml}
+
+The '''displayPositions.dpml''' script was quite easy to put together.  A request to '''active:getAllPositions''' is given as the '''operand''' argument to a request to the '''active:xslt2''' NetKernel service, along with a reference to a xsl stle sheet transform file resource.  
+
+<blockquote>
+As above, the script did not initially control the cache expiry of the response, so repeated hits to the link replayed the same, cached, HTML to the browser.  Only once I added the <code><modify-response></code> element to ensure NK never cached the response, did the page start working as expected.
+</blockquote>
+
+{xml}
+<sequence>
+	<request assignment="response">
+		<identifier>active:xslt2</identifier>
+		<argument name="operator">res:/resources/endpoints/allPositionHTMLTransform.xsl</argument>
+		<argument name="operand">
+			<request>
+				<identifier>active:getAllPositions</identifier>
+			</request>
+		</argument>		
+	</request>
+	<modify-response assignment="response">
+	  <operand>this:response</operand>
+	  <config>
+	    <literal type="xml">
+	      <config>
+	        <header name="mime">text/html</header>
+	        <expiry method="ALWAYS" />
+	      </config>
+	    </literal>
+	  </config>
+	</modify-response>
+</sequence>
+{/xml}
+
+

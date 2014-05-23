@@ -5,7 +5,7 @@
 			<version>0.0.1</version>
 		</identity>
 		<info>
-			<name>Position Keeping Module</name>
+			<name>PKS Position Keeping Module</name>
 			<description>Positions and position deltas
 			</description>
 		</info>

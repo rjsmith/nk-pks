@@ -71,16 +71,31 @@
 	</doc>
 	<doc>
 		<id>doc:uk:co:rsbatechnology:pks:diary:part10</id>
-		<title>Part 10: Settlement Position Builder Endpoint</title>
+		<title>Part 10: Settlement Position Builder</title>
 		<desc>Implementing settlement position builder endpoint</desc>
 		<uri>res:/doc/diary/part10.txt</uri>
 		<keywords />
 	</doc>
 	<doc>
 		<id>doc:uk:co:rsbatechnology:pks:diary:part11</id>
-		<title>Part 11: Composing the PKS application</title>
+		<title>Part 11: Composing</title>
 		<desc>Creating a minimal working PKS application by composing physical endpoints together</desc>
 		<uri>res:/doc/diary/part11.txt</uri>
 		<keywords />
 	</doc>
+	<doc>
+		<id>doc:uk:co:rsbatechnology:pks:diary:part12</id>
+		<title>Part 12: Web Simulator</title>
+		<desc>Web-based FX trade and position display simulator</desc>
+		<uri>res:/doc/diary/part12.txt</uri>
+		<keywords />
+	</doc>
+	<doc>
+		<id>img:uk:co:rsbatechnology:pks:diary:part12:simulator</id>
+		<uri>res:/doc/diary/simulator.png</uri>
+	</doc>	
+	<doc>
+		<id>img:uk:co:rsbatechnology:pks:diary:part12:displaypositions</id>
+		<uri>res:/doc/diary/displaypositions.png</uri>
+	</doc>	
 </docs>

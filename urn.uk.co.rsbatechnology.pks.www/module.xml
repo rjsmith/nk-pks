@@ -63,7 +63,7 @@
 			<import><uri>urn:org:netkernel:xml:saxon</uri></import>				
          </space>
       </mapper>
-      <fileset><!--Icon-->
+      <fileset>
          <regex>res:/pks/pub/(.*)</regex>
          <rewrite>res:/resources/pub/$1</rewrite>
       </fileset>

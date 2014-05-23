@@ -32,6 +32,17 @@ function stopRandomTrade() {
 	clearInterval(sendTrades)
 }
 
+function displayPositions() {
+	xmlhttp.open("GET","../displaypositions", false);
+	xmlhttp.send();
+	document.getElementById("positionsTable").innerHTML = xmlhttp.responseText;
+}
+
+function clearPKSCache() {
+	xmlhttp.open("GET","../clearall", false);
+	xmlhttp.send();
+}
+
 
 
 </script>
@@ -43,9 +54,12 @@ function stopRandomTrade() {
 <button type="button" onclick="sendRandomTrade()">Send 1 trade</button>
 <button type="button" onclick="startRandomTrade()">Start sending</button>
 <input id="sendIntervalMS" type="text" size="10" value="1000" /> millis&nbsp;&nbsp;
-<button type="button" onclick="stopRandomTrade()">Stop sending</button>
-<div id="transactionID" />
+<button type="button" onclick="stopRandomTrade()">Stop sending</button><br />
+<button type="button" onclick="displayPositions()">Display positions</button>
+<button type="button" onclick="clearPKSCache()">Delete all positions</button>
+<div id="transactionID"></div>
 
+<div id="positionsTable"></div>
 
 </body>
 </html>

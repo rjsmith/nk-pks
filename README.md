@@ -29,6 +29,10 @@ This is the main Position Keeping Server application NK module.  It contains the
 
 This NK module contains NetKernel XUnit tests for the PKS application.
 
+### urn.uk.co.rsbatechnology.pks.www
+
+This module provides a simple web simulator application, to exercise the core PKS application by generating semi-random FX trade requests into the PKS front-end space.
+
 ## Installation
 
 To manually install these modules into a NetKernel installation, please follow the steps below.  
@@ -41,9 +45,21 @@ It is assumed that you already have a working NK5.xSE or EE installation (the in
         <modules>
 	        <module runlevel="7">[RelativePathFromNKinstallToPKSinstall]/urn.uk.co.rsbatechnology.pks/</module>
 	        <module runlevel="7">[RelativePathFromNKinstallToPKSinstall]/urn.test.uk.co.rsbatechnology.pks/</module>
+	        <module runlevel="7">[RelativePathFromNKinstallToPKSinstall]/urn.uk.co.rsbatechnology.pks.www/</module>
         </modules>
 
 You will also need to install the **xml-saxon** package from the Apposite repository, as some of the endpoints use XSLT2
+
+### Web Simulator
+
+The web simulator is configured to use the NetKernel Back-end Fulcrum.  The following URLs are provided:
+
+http://localhost:1060/pks/pub/simulator.html (send one-shot and periodic random FX trades)
+
+http://localhost:1060/pks/displaypositions (displays current positions held in PKS)
+
+http://localhost:1060/pks/clearall (wipes out all persisted position and position delta state)
+
 ## PKS Diary
 
 Once you have installed the PKS application modules into your NetKernel instance, you should be able to [view the embedded PKS Diary book](http://localhost:1060/book/view/book:uk:co:rsbatechnology:pks:diary/)
