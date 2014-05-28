@@ -1,1 +1,4 @@
-<connection><type>HTTPAdminFulcrum</type></connection>
+<connection>
+	<type>HTTPAdminFulcrum</type>
+	<type>HTTPFulcrum</type>
+</connection>
