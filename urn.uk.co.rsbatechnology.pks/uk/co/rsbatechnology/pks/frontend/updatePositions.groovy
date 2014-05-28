@@ -1,4 +1,5 @@
 import org.netkernel.layer0.nkf.INKFRequest
+import org.netkernel.layer0.representation.impl.*;
 import org.netkernel.layer0.representation.IHDSNode
 import org.netkernel.layer0.representation.IHDSNodeList
 
@@ -9,24 +10,37 @@ import org.netkernel.layer0.representation.IHDSNodeList
 // Obtain source FX transaction representation
 IHDSNode sourceTransaction = context.source("arg:sourceTransaction")
  
-// Create request to Open Settlement Position Builder
-INKFRequest builderRequest = context.createRequest("active:settlementPositionBuilder")
-builderRequest.addArgumentByValue("operand", sourceTransaction)
-IHDSNode generatedDeltas = context.issueRequest(builderRequest)
+IHDSNode builderEndpoints = context.source("active:discoverPositionBuilderEndpoints")
 
-// Post these positions to the position cache
-String[] deltaList = generatedDeltas.getValues("//positionDelta")
+HDSBuilder b = new HDSBuilder()
 
-for (deltaIdentifier in deltaList)
-{
+for (IHDSNode endpoint in builderEndpoints.getNodes("//builderEndpoint")) {
+	// Create request to each Position Builder
+	endpointID = endpoint.getFirstValue("id")
+	INKFRequest builderRequest = context.createRequestToEndpoint(endpointID)
+	builderRequest.addArgumentByValue("operand", sourceTransaction)
+	IHDSNode generatedDeltas = context.issueRequest(builderRequest)
+	generatedDeltas.getValues("//positionDelta").each {b.addNode("positionDelta", it)}
+}
+
+IHDSNode deltaList = b.getRoot()
+
+def asyncHandlers = []
+
+for (deltaIdentifier in deltaList.getValues("/*")) {
+
 	// Build position posting request
 	// Issue each posting request asynchronously to improve posting performance across threads
 	INKFRequest postingRequest = context.createRequest("active:positionPosting")
 	postingRequest.addArgument("operand", deltaIdentifier)
-	context.issueAsyncRequest(postingRequest)
+	asyncHandlers << context.issueAsyncRequest(postingRequest)
 }
 
-context.createResponseFrom(generatedDeltas)
+// Wait for position postings to complete
+asyncHandlers.each {it.join()}
+
+context.createResponseFrom(deltaList)
+
 
 
 

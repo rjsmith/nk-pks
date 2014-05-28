@@ -20,7 +20,6 @@
 				<import>res:/uk/co/rsbatechnology/pks/frontendMapperConfig.xml</import>
 			</config>
 			<space>
-				<import><uri>urn:uk:co:rsbatechnology:pks:builders</uri></import>
 				<import><uri>urn:uk:co:rsbatechnology:pks:posting</uri></import>
 				<import><uri>urn:uk:co:rsbatechnology:pks:position</uri></import>
 				<import><uri>urn:uk:co:rsbatechnology:pks:delta</uri></import>
@@ -33,43 +32,24 @@
 				</import>
 				<!-- Enables active:groovy to be resolvable -->
 				<import><uri>urn:org:netkernel:lang:groovy</uri></import>
+				<endpoint>
+					<prototype>DynamicImport</prototype>
+					<config>active:builderEndpointSpaceImports</config>
+				</endpoint>
+  				<!-- Enables DynamicImport prototype -->
+  				<import>
+  					<uri>urn:org:netkernel:ext:layer1</uri>
+				</import>
+				<!-- Used in builderEndpointSpaceImports.groovy -->
+				<import>
+  					<uri>urn:org:netkernel:xml:saxon</uri>
+				</import>
+				<!-- Enables active:userMetaAggregator -->
+				<import>
+  					<uri>urn:org:netkernel:ext:system</uri>
+  				</import>
 			</space>
 		</mapper>
-		<!-- NCode endpoints 
-		<fileset>
-			<regex>res:/uk/co/rsbatechnology/pks/frontend/ncode/ncode.xml</regex>
-			<poll>100</poll>
-			<mutable>true</mutable>
-		</fileset>
-		  <import>
-		    <uri>urn:org:netkernel:lang:ncode</uri>
-		    <private />
-		  </import>
-		<import>
-		  <uri>urn:org:netkernel:lang:ncode:builtins</uri>
-		    <private />
-		</import>		  
-		<import>
-		    <uri>urn:org:netkernel:ext:layer1</uri>
-		    <private />
-		  </import>
-				<import><uri>urn:uk:co:rsbatechnology:pks:builders</uri></import>
-				<import><uri>urn:uk:co:rsbatechnology:pks:posting</uri></import>
-				<import><uri>urn:uk:co:rsbatechnology:pks:position</uri></import>
-				<import><uri>urn:uk:co:rsbatechnology:pks:delta</uri></import>
-				
-	  <endpoint>
-	    <prototype>nCoDERuntime</prototype>
-	    <name>PKS nCoDE Frontend</name>
-	    <operator>res:/uk/co/rsbatechnology/pks/frontend/ncode/ncode.xml</operator>
-	    <dynamicImportConfig>active:nCoDEDynamicImports</dynamicImportConfig>
-	  </endpoint>
-	  <endpoint>
-	    <prototype>DynamicImport</prototype>
-	    <config>active:nCoDEDynamicImports</config>
-	    <private />
-	  </endpoint>
-	-->
 	</rootspace>
 	<rootspace name="PKS Position Cache Rootspace" uri="urn:uk:co:rsbatechnology:pks:position"
 		public="true">

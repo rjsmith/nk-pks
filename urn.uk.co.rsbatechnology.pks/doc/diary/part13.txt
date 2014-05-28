@@ -1,0 +1,172 @@
+= Part 13: Dynamic Composition =
+
+The '''updatePositions.groovy''' script uses a hard-coded call to the '''active:settlementPositionBuilder''' endpoint to calculate '''OPEN''' positions, along with a <code><import></code> for the '''pks:builders''' space declared in the '''pks:frontend''' space definition. Adding additional builders would need changes to both, which requires us to remember this dependency for the (hopefully long) life of the PKS application.  
+
+With the dynamic nature of NetKernel, we can do much better than that if we can find a way of auto-discovering all position building endpoints deployed in the running system.  That is the aim of this part of the PKS Diary.
+
+==The active:userMetaAggregator core system service==
+
+NetKernel provides a number of mechanisms to support dynamic imports of spaces, and auto-discovery of endpoints, including:
+
+# [[doc:layer1:accessors:dynamic-import | Dynamic Import Accessor]], which imports spaces specified in a configuration resource.
+# [[doc:layer1:accessors:sid | Simple Import Discovery Accessor]], which builds a Dynamic Import configuration from all public spaces that expose the resource <code>res:/etc/system/SimpleDynamicImportHook.xml</code>
+# [[doc:layer1:accessors:hdsaggregate | Space Aggregate HDS]], which builds an aggregated HDS representation of the contents of an identified HDS-transreptable resource in every public space in the system in which that resource can be resolved.
+# [[doc:ext:system:usermeta | User Meta Aggregator]], which searches and aggregates user metadata across all deployed public endpoints.
+
+With help from Peter Rodgers, I decided to try the '''active:userMetaAggregator''' approach, because I wanted to identify individual position builder endpoints (two or more of which may be deployed in the same space), rather than spaces.  He also suggested I use the meta-todo apposite package as a good example on how to use this pattern.
+
+==Adding meta data to position builder endpoints==
+
+I added a simple <code><meta></code> element to the '''active:settlementPositionBuilder''' endpoint declaration in the '''positionBuilderMapperConfig.xml''' mapper config file, which simply tagged this endpoint as a position builder:
+
+{xml}
+		<meta>
+			<pks-builder />
+		</meta>
+{/xml}
+
+Also, to make it easier to find the endpoint in NK's auto-generated documentation system, I gave it a system-unique endpoint id name, so that I could now find the endpoint details using this url:
+
+http://localhost:1060/tools/ae/view/epDetails/fo/9/uk.co.rsbatechnology.pks.builder.settlementPositionBuilder
+
+The contract for any position builder endpoint then becomes:
+
+# Must have an '''operand''' argument taking in a source transaction representation
+# Endpoint declaration marked with the <code><pks-builder /></code> user meta data element
+
+Other than that, they can be contained in any space, and have any private structure and implementation.
+
+== Front-end space active:discoverPositionBuilderEndpoints service==
+
+I decided to create a new service endpoint, '''active:discoverPositionBuilderEndpoints''' in the PKS front-end space to get a list of position building endpoints.  This would also allow the results of this to be cached.  The endpoint had to request the '''active:userMetaAggregator''' service, then return a list of all endpoint IDs containing the marker <code><pks-builder /></code> meta data element.
+
+{java}
+IHDSNode rep=getUserMetaData()
+
+HDSBuilder b = new HDSBuilder()
+// Find first endpoint with <pks-builder> meta data element
+builderMetaDataNodes = rep.getNodes("//pks-builder")
+for (builderMetaDataNode in builderMetaDataNodes) {
+	builderEndpointID = builderMetaDataNode.getParent().getParent().getFirstValue("id") // Get endpoint ID
+	b.addNode(null,builderEndpointID)
+}
+context.createResponseFrom(b.getRoot())
+
+def getUserMetaData() {
+	req=context.createRequest("active:userMetaAggregator")
+	req.addArgument("originonly", "true")
+	req.setRepresentationClass(IHDSNode.class)
+	rep=context.issueRequest(req)
+	return rep
+}
+{/java}
+
+Using the Visualizer, I could see that subsequent calls to the service came from the representation cache.
+
+{literal}
+null : null
+	null : uk.co.rsbatechnology.pks.builder.settlementPositionBuilder
+{/literal}
+
+==Modifying the updatePositions.groovy script==
+
+I then modified the '''updatePositions.groovy''' front-end composition endpoint to iterate through a list of position builder endpoints, collating a list of generated position deltas before posting them to the position cache. Note the use of the <code>createRequestToEndpoint()</code> method to use the endpoint ID identifier to set the request identifier.
+
+{java}
+IHDSNode sourceTransaction = context.source("arg:sourceTransaction")
+ 
+IHDSNode builderEndpoints = context.source("active:discoverPositionBuilderEndpoints")
+
+HDSBuilder b = new HDSBuilder()
+
+for (endpointID in builderEndpoints.getValues("/*")) {
+	// Create request to Open Settlement Position Builder
+	INKFRequest builderRequest = context.createRequestToEndpoint(endpointID)
+	builderRequest.addArgumentByValue("operand", sourceTransaction)
+	IHDSNode generatedDeltas = context.issueRequest(builderRequest)
+	generatedDeltas.getValues("//positionDelta").each {b.addNode("positionDelta", it)}
+}
+
+IHDSNode deltaList = b.getRoot()
+
+def asyncHandlers = []
+
+for (deltaIdentifier in deltaList.getValues("/*")) {
+
+	// Build position posting request
+	// Issue each posting request asynchronously to improve posting performance across threads
+	INKFRequest postingRequest = context.createRequest("active:positionPosting")
+	postingRequest.addArgument("operand", deltaIdentifier)
+	asyncHandlers << context.issueAsyncRequest(postingRequest)
+}
+
+// Wait for position postings to complete
+asyncHandlers.each {it.join()}
+
+context.createResponseFrom(deltaList)
+{/java}
+
+After some debugging mostly related to building the <code>deltaList</code> HDS structure, I got the XUnit test for this endpoint passing again. I also used the web simulator to see the end-to-end flow was working. 
+
+I also encountered an interesting issue with the position builder itself, whereby the position posting was intermittingly failing due to an un-SINKed position delta.  I figured out this was because the settlement position builder was sending the SINK position delta requests using the <code>context.sendAsyncRequest()</code> asynchronous method. This caused a race condition between persisting the position deltas and then SOURCing them in the '''active:positionPosting''' service endpoint.  Instead of using fire-and-forget, I assigned request handlers to each of the <code>sendAsyncRequest()</code> method calls, and called <code>join()</code> on them at the end.  This ensures the delta persistence is done in parallel (given available threads) but also ensures the builder endpoint does not complete until the deltas have been safely persisted.
+
+==Imports and Dynamic Imports==
+
+The front-end rootspace definition was still declaratively importing the '''pks:builder''' space:
+
+{xml}
+				<import><uri>urn:uk:co:rsbatechnology:pks:builders</uri></import>
+{/xml}
+
+which breaks the zero-coupling composition idea for auto-discovering builder endpoints. To complete this, I wanted to find a way around needing this pre-defined import.  I removed this import, re-ran a test, and now got this exception, as expected:
+
+{literal}
+Unhandled exception occurred: Request Resolution Failure META uk.co.rsbatechnology.pks.builder.settlementPositionBuilder in Lang / Groovy (private)
+{/literal}
+
+I decided to use the [[doc:layer1:accessors:dynamic-import | Dynamic Import Accessor]] to import the spaces containing the builders, which would then be used to resolve the builder requests generated by the '''updatePositions.groovy''' script.
+
+First, I created a new front-end space service, '''active:builderEndpointSpaceImports''' that generated a DynamicImport config from the list of builder endpoints generated by the '''active:discoverPositionBuilderEndpoints''' service (which was itself modified to return both the endpoint ID and space URIs). This is the groovy script:
+
+{java}
+builders = context.source("active:discoverPositionBuilderEndpoints")
+
+req = context.createRequest("active:xslt2")
+req.addArgumentByValue("operand", builders)
+req.addArgument("operator", "res:/uk/co/rsbatechnology/pks/frontend/builderSpaceImports-style.xsl")
+rep=context.issueRequest(req)
+
+context.createResponseFrom(rep);
+{/java}
+
+The xslt2 transform generates a config xml document looking like this:
+
+{xml}
+<config>
+	<space>
+		<uri>urn:uk:co:rsbatechnology:pks:builders</uri>
+	</space>
+</config>
+{/xml}
+
+The front-end rootspace definition was changed to replace the '''pks.builders''' space import with a DynamicImport endpoint:
+{xml}
+				<endpoint>
+					<prototype>DynamicImport</prototype>
+					<config>active:builderEndpointSpaceImports</config>
+				</endpoint>
+{/xml}
+
+I used the Module Explorer to verify that the DynamicImport was correctly importing the builder endpoints into the front-end mapper space.  However, it did not appear to work correctly. When I inspected the DynamicImportEndpoint in the explorer, the page showed this '''imports''' value:
+
+{xml}
+<imports>
+  <import>
+    <uri>urn:uk:co:rsbatechnology:pks:builders</uri>
+    <version>0.0.1</version>
+  </import>
+</imports>
+{/xml}
+
+but the endpoint '''elements''' list was empty.
+

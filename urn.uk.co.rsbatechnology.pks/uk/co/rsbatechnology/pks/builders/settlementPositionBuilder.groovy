@@ -61,7 +61,7 @@ if (sourceTransaction.getFirstNode("//fxspotoutright") != null) {
 	sinkPositionDeltaRequest.addArgumentByValue("deltaSequence", deltaSequence)
 	sinkPositionDeltaRequest.addArgumentByValue("sourceTransaction", sourceTransactionNode)
 	sinkPositionDeltaRequest.addPrimaryArgument(baseCurrencyDeltaAmountsNode)
-	context.issueAsyncRequest(sinkPositionDeltaRequest)
+	INKFAsyncRequestHandle requestHandle1 = context.issueAsyncRequest(sinkPositionDeltaRequest)
 	deltaIdentifier = "delta:"+businessArea+POSITION_IDENTIFIER_DELIMITER+location+POSITION_IDENTIFIER_DELIMITER+lifecycleType+POSITION_IDENTIFIER_DELIMITER+account+POSITION_IDENTIFIER_DELIMITER+"OPEN"+POSITION_IDENTIFIER_DELIMITER+valueDate+POSITION_IDENTIFIER_DELIMITER+baseCurrencySymbol+POSITION_IDENTIFIER_DELIMITER+deltaSequence
 	b.addNode("positionDelta", deltaIdentifier)
 	
@@ -77,10 +77,13 @@ if (sourceTransaction.getFirstNode("//fxspotoutright") != null) {
 	sinkPositionDeltaRequest.addArgumentByValue("deltaSequence", deltaSequence)
 	sinkPositionDeltaRequest.addArgumentByValue("sourceTransaction", sourceTransactionNode)
 	sinkPositionDeltaRequest.addPrimaryArgument(termCurrencyDeltaAmountsNode)
-	context.issueAsyncRequest(sinkPositionDeltaRequest)
+	INKFAsyncRequestHandle requestHandle2 = context.issueAsyncRequest(sinkPositionDeltaRequest)
 	deltaIdentifier = "delta:"+businessArea+POSITION_IDENTIFIER_DELIMITER+location+POSITION_IDENTIFIER_DELIMITER+lifecycleType+POSITION_IDENTIFIER_DELIMITER+account+POSITION_IDENTIFIER_DELIMITER+"OPEN"+POSITION_IDENTIFIER_DELIMITER+valueDate+POSITION_IDENTIFIER_DELIMITER+termCurrencySymbol+POSITION_IDENTIFIER_DELIMITER+deltaSequence
 	b.addNode("positionDelta", deltaIdentifier)
 
+	// Now wait for position deltas to be persisted
+	requestHandle1.join()
+	requestHandle2.join()
 } 
 
 //Build response with list of position delta identifiers

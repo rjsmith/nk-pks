@@ -4,9 +4,13 @@
 -->
 <config>
 	<endpoint>
+		<id>uk.co.rsbatechnology.pks.builder.settlementPositionBuilder</id>
+		<meta>
+			<pks-builder />
+		</meta>
 		<description>Open settlement position builder
 		</description>
-		<verbs>SOURCE</verbs>
+		<verbs>SOURCE,META</verbs>
 		<grammar>
 			<active>
 				<identifier>active:settlementPositionBuilder</identifier>
