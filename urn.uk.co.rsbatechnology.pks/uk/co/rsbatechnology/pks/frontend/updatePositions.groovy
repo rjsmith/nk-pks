@@ -18,6 +18,7 @@ for (IHDSNode endpoint in builderEndpoints.getNodes("//builderEndpoint")) {
 	// Create request to each Position Builder
 	endpointID = endpoint.getFirstValue("id")
 	INKFRequest builderRequest = context.createRequestToEndpoint(endpointID)
+	//INKFRequest builderRequest = context.createRequest("active:settlementPositionBuilder")
 	builderRequest.addArgumentByValue("operand", sourceTransaction)
 	IHDSNode generatedDeltas = context.issueRequest(builderRequest)
 	generatedDeltas.getValues("//positionDelta").each {b.addNode("positionDelta", it)}
