@@ -13,6 +13,9 @@
 	<system>
 		<dynamic />
 	</system>
+	<rootspace name="PKS Front-end Import Discovery Config" uri="urn:uk:co:rsbatechnology:pks:frontend:discovery"
+		public = "false">
+	</rootspace>
 	<rootspace name="PKS Front-end Rootspace" uri="urn:uk:co:rsbatechnology:pks:frontend"
 		public="true">
 		<mapper>
@@ -23,6 +26,12 @@
 				<import><uri>urn:uk:co:rsbatechnology:pks:posting</uri></import>
 				<import><uri>urn:uk:co:rsbatechnology:pks:position</uri></import>
 				<import><uri>urn:uk:co:rsbatechnology:pks:delta</uri></import>
+				<!-- Set dynamicimports space import to private to stop FrondEndFulcrum dynamic import from
+						parsing all of these dynamic imports again -->
+				<import>
+					<uri>urn:uk:co:rsbatechnology:pks:frontend:dynamicimports</uri>
+					<private />
+				</import>
 				<!-- Other imports -->
 				<fileset>
 					<regex>res:/uk/co/rsbatechnology/pks/.*</regex>
@@ -32,24 +41,29 @@
 				</import>
 				<!-- Enables active:groovy to be resolvable -->
 				<import><uri>urn:org:netkernel:lang:groovy</uri></import>
-				<endpoint>
-					<prototype>DynamicImport</prototype>
-					<config>active:builderEndpointSpaceImports</config>
-				</endpoint>
-  				<!-- Enables DynamicImport prototype -->
-  				<import>
-  					<uri>urn:org:netkernel:ext:layer1</uri>
-				</import>
-				<!-- Used in builderEndpointSpaceImports.groovy -->
-				<import>
-  					<uri>urn:org:netkernel:xml:saxon</uri>
-				</import>
 				<!-- Enables active:userMetaAggregator -->
 				<import>
   					<uri>urn:org:netkernel:ext:system</uri>
   				</import>
 			</space>
 		</mapper>
+	</rootspace>
+	<rootspace name="PKS Front-end Dynamic Import" uri="urn:uk:co:rsbatechnology:pks:frontend:dynamicimports"
+		public = "false">
+		<!-- instantiate the dynamic import referencing the import discovery service -->
+		<endpoint>
+			<prototype>DynamicImport</prototype>
+			<config>active:SimpleImportDiscovery</config>
+		</endpoint>
+		<endpoint>
+			<prototype>SimpleImportDiscovery</prototype>
+			<grammar>active:SimpleImportDiscovery</grammar>
+			<type>PKS Builder</type>
+		</endpoint>
+		<!-- Used by Dynamic Import -->
+		<import>
+			<uri>urn:org:netkernel:ext:layer1</uri>
+		</import>
 	</rootspace>
 	<rootspace name="PKS Position Cache Rootspace" uri="urn:uk:co:rsbatechnology:pks:position"
 		public="true">
@@ -182,6 +196,12 @@
 				<import><uri>urn:org:netkernel:lang:groovy</uri></import>
 			</space>
 		</mapper>
+		<!-- Register this space as providing position builder endpoints  -->
+		<literal type="xml" uri="res:/etc/system/SimpleDynamicImportHook.xml">
+   			<connection>
+    				 <type>PKS Builder</type>
+  				</connection>
+		</literal>
 	</rootspace>
 		<rootspace name="PKS Diary Rootspace"  uri="urn:uk:co:rsbatechnology:pks:diary">
 		<!--Declare the documentation for publication into the doc system -->

@@ -1,5 +1,7 @@
 = Part 13: Dynamic Composition =
 
+__TOC__
+
 The '''updatePositions.groovy''' script uses a hard-coded call to the '''active:settlementPositionBuilder''' endpoint to calculate '''OPEN''' positions, along with a <code><import></code> for the '''pks:builders''' space declared in the '''pks:frontend''' space definition. Adding additional builders would need changes to both, which requires us to remember this dependency for the (hopefully long) life of the PKS application.  
 
 With the dynamic nature of NetKernel, we can do much better than that if we can find a way of auto-discovering all position building endpoints deployed in the running system.  That is the aim of this part of the PKS Diary.
@@ -33,6 +35,7 @@ The contract for any position builder endpoint then becomes:
 
 # Must have an '''operand''' argument taking in a source transaction representation
 # Endpoint declaration marked with the <code><pks-builder /></code> user meta data element
+# Builder's containing space must include <type>PKS Builder</type> in a <code>res:/etc/system/SimpleDynamicImportHook.xml</code> resource.
 
 Other than that, they can be contained in any space, and have any private structure and implementation.
 
@@ -108,7 +111,9 @@ context.createResponseFrom(deltaList)
 
 After some debugging mostly related to building the <code>deltaList</code> HDS structure, I got the XUnit test for this endpoint passing again. I also used the web simulator to see the end-to-end flow was working. 
 
+<blockquote>
 I also encountered an interesting issue with the position builder itself, whereby the position posting was intermittingly failing due to an un-SINKed position delta.  I figured out this was because the settlement position builder was sending the SINK position delta requests using the <code>context.sendAsyncRequest()</code> asynchronous method. This caused a race condition between persisting the position deltas and then SOURCing them in the '''active:positionPosting''' service endpoint.  Instead of using fire-and-forget, I assigned request handlers to each of the <code>sendAsyncRequest()</code> method calls, and called <code>join()</code> on them at the end.  This ensures the delta persistence is done in parallel (given available threads) but also ensures the builder endpoint does not complete until the deltas have been safely persisted.
+</blockquote>
 
 ==Imports and Dynamic Imports==
 
@@ -170,3 +175,67 @@ I used the Module Explorer to verify that the DynamicImport was correctly import
 
 but the endpoint '''elements''' list was empty.
 
+At this point, I reached out to Peter Rodgers to rescue me.  It turns out I was trying to bend the laws of causality (as he put it!).  It is not possible to resolve endpoints in a space (in this case, the '''active:builderEndpointSpaceImports''') until that space has been set up during the NK bootstrap sequence .. but this was not possible because the DyamicImport endpoint was dependent on the '''active:builderEndpointSpaceImports''' endpoint which was ''declared in the same space''.
+
+One manifestation of this was seeing warnings like this printed in the console log:
+
+{literal}
+W 12:47:56 ModuleListAc~ Possible startup instability [30] with [PKS Front-end Rootspace] - consider increasing stdmod.initialisation.hysteresis in kernel.properties
+{/literal}
+
+Peter's first suggested solution was to declare two more rootpaces in the PKS module, to contain the '''active:builderEndpointSpaceImports''' and '''active:discoverPositionBuilderEndpoints''' endpoints respectively. And then import the space containing the '''active:builderEndpointSpaceImports''' endpoint into the front-end space using a <import> accessor.  However, this would still cause problems because of the reliance on the '''active:userMetaAggregator''' service which, in turns out, can't be used properly until the NK post-commission lifecyle phase.
+
+The second suggestion, which I then implemented, was to not try and be quite so clever, and fall back to the use the '''simpleDynamicImport''' as described briefly below.
+
+==Trying again: SimpleImportDiscovery==
+
+Based on Peter's own suggestions, I created a new rootpace in the PKS module to contain the dynamic import of "PKS Builder" - typed spaces.
+
+{xml}
+	<rootspace name="PKS Front-end Dynamic Import" uri="urn:uk:co:rsbatechnology:pks:frontend:dynamicimports"
+		public = "false">
+		<endpoint>
+			<prototype>SimpleImportDiscovery</prototype>
+			<grammar>active:SimpleImportDiscovery</grammar>
+			<type>PKS Builder</type>
+		</endpoint>
+		<!-- instantiate the dynamic import referencing the import discovery service -->
+		<endpoint>
+			<prototype>DynamicImport</prototype>
+			<config>active:SimpleImportDiscovery</config>
+		</endpoint>
+		<!-- Used by Dynamic Import -->
+		<import>
+			<uri>urn:org:netkernel:ext:layer1</uri>
+		</import>
+	</rootspace>
+{/xml}
+
+Then, the front-end rootspace imported this space (which would provide it access to all the spaces imported within it).
+
+{xml}
+				<!-- Set dynamicimports space import to private to stop FrondEndFulcrum dynamic import from
+						parsing all of these dynamic imports again -->
+				<import>
+					<uri>urn:uk:co:rsbatechnology:pks:frontend:dynamicimports</uri>
+					<private />
+				</import>
+{/xml}
+
+Note the use of <code>private="true"</code> attribute in the <code><import></code> element.  I found this was necessary to stop other SimpleDynamicImport instances in the system (e.g. FrontendHTTPFulcrum) from seeing a copy of the complete list of spaces contained within the '''pks:frontend:dynamicimports''' space.  Using the Visualizer, this seemd to save a few unnecesary milliseconds, even though all the space metadat was being obtained from the NK representation cache).
+
+Finally, the '''updatePositions.groovy''' script was able to issue the builder endpoint requests, resolving them via the dynamic import.
+
+Despite Peter's help, it still took me a few goes to get to the final solution described above.  Along the way, I managed to get NK to run out of memory on several occasions, and the '''ModuleListAccessor''' kept reporting startup instability errors in the console log.
+
+First, I included both the DynamicImport and SimpleImportDiscovery accessors into the front-end rootspace.  But I kept getting the startup instability error. 
+ 
+Then, I refactored those endpoints out into two separate rootspaces, and then imported one into the other.  That still seemed to generate the startup instability error.
+
+Then I refactored the endpoints into a single '''dynamicimports''' space, as shown above.  Still got the instability errors.
+
+The instability errors only disappeared once I set the private="true" attribute on the '''urn:uk:co:rsbatechnology:pks:frontend:dynamicimports''' import.   Thinking about it, it must have got into a recursive loop ... every time the '''SimpleImportDiscovery''' accessor parsed the list of public spaces and endpopints, it encountered the public import of the '''dynamicimports''' space within the PKS '''frontend''' space, which itself contained the front-end PKS space, which exposed the '''dynamicimports''' space ..... and so on into infinity (or in my case when the JVM ran out of heap space).
+
+<blockquote>
+So, a lesson learnt is that when playing with dynamic imports, which are powerful endpoints that scan the entire system (including the space stack in which the dynamic import is itself contained, if all set to public visibility), be very careful of the visibility of the import beyond the space in question.  
+</blockquote>

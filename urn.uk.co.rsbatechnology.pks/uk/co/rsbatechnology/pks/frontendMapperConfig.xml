@@ -60,18 +60,4 @@
 			<argument name="operator">res:/uk/co/rsbatechnology/pks/frontend/discoverBuilderEndpoints.groovy</argument>
 		</request>
 	</endpoint>
-	<endpoint>
-		<description>List of spaces containing position builders, to use in DynamicImport 
-		</description>
-		<verbs>SOURCE</verbs> 
-		<grammar>
-			<active>
-				<identifier>active:builderEndpointSpaceImports</identifier>
-			</active>
-		</grammar>
-		<request>
-			<identifier>active:groovy</identifier>
-			<argument name="operator">res:/uk/co/rsbatechnology/pks/frontend/builderEndpointSpaceImports.groovy</argument>
-		</request>
-	</endpoint>
 </config>
