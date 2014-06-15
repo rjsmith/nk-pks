@@ -1,0 +1,12 @@
+<sequence>
+	<request assignment="cronJobDefinition">
+	    		<identifier>active:freemarker</identifier>
+	    		<argument name="repeatCount">arg:repeatCount</argument>
+	    		<argument name="repeatInterval">arg:repeatInterval</argument>
+	    		<argument name="operator">res:/resources/endpoints/sendMultipleTrades.ftl</argument>
+	</request>
+	<request assignment="response">
+	    <identifier>active:cronNew</identifier>
+	    <argument name="job">this:cronJobDefinition</argument>
+	</request>
+</sequence>

@@ -46,6 +46,17 @@
                   <identifier>active:clearPKSCache</identifier>
                </request>
             </endpoint>
+            <endpoint>
+               <grammar>
+               		<simple>res:/pks/sendmultipletrades/{interval}/{repeats}</simple>
+               </grammar>
+              <request>
+                  <identifier>active:dpml</identifier>
+                  <argument name="operator">res:/resources/endpoints/sendMultipleTrades.xml</argument>
+                  <argument name="repeatCount" method="as-string">[[arg:repeats]]</argument>
+	    		  <argument name="repeatInterval" method="as-string">[[arg:interval]]</argument>
+               </request>
+            </endpoint>
          </config>
          <space>
             <fileset>
@@ -60,7 +71,11 @@
 				<import>
 					<uri>urn:org:netkernel:lang:dpml</uri>
 			</import>
-			<import><uri>urn:org:netkernel:xml:saxon</uri></import>				
+			<import>
+ 					 <uri>urn:org:netkernel:lang:freemarker</uri>
+			</import>
+			<import><uri>urn:org:netkernel:xml:saxon</uri></import>	
+			<import><uri>urn:org:netkernel:mod:cron</uri></import>			
          </space>
       </mapper>
       <fileset>
