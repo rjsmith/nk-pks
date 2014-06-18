@@ -24,7 +24,9 @@ function sendRandomTrade() {
 }
 
 function sendMultipleTrades() {
-	xmlhttp.open("GET","../sendmultipletrades/1000/3", false);
+	sendMultipleIntervalMS = document.getElementById("sendMultipleIntervalMS").value
+	sendMultipleRepeats = document.getElementById("sendMultipleRepeats").value
+	xmlhttp.open("GET","../sendmultipletrades/"+sendMultipleIntervalMS+"/"+sendMultipleRepeats, false);
 	xmlhttp.send();
 }
 
@@ -60,8 +62,8 @@ function clearPKSCache() {
 <button type="button" onclick="startRandomTrade()">Start sending</button>
 <input id="sendIntervalMS" type="text" size="10" value="1000" /> millis&nbsp;&nbsp;
 <button type="button" onclick="stopRandomTrade()">Stop sending</button><br />
-Interval: <input id="sendIntervalMS" type="text" size="10" value="1000" /> millis&nbsp;&nbsp;
-Repeats: <input id="sendIntervalMS" type="text" size="10" value="5" /> trades&nbsp;&nbsp;
+Interval: <input id="sendMultipleIntervalMS" type="text" size="10" value="1000" /> millis&nbsp;&nbsp;
+Repeats: <input id="sendMultipleRepeats" type="text" size="10" value="5" /> trades&nbsp;&nbsp;
 <button type="button" onclick="sendMultipleTrades()" title="Send random trades every Interval, for #repeats + 1 times">Send multiple random</button><br />
 <button type="button" onclick="displayPositions()">Display positions</button>
 <button type="button" onclick="clearPKSCache()">Delete all positions</button>
