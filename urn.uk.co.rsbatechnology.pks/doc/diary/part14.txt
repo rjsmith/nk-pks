@@ -151,6 +151,125 @@ It is clear that our goal of '''10ms''' end-to-end has been exceeded between +10
 
 Although not surprising, it highlights the old adage of avoiding direct SQL calls from a low-latency , high-throughput application if at all possible.  In the original, real-world platform in which the Java OO - based PKS operates,  it used a very fast write-only local persistence event source file (for restoring cache state on re-start) in line with the business logic.  An entirely separate Java application running on a different server was responsible for persisting trade and position message contents published on the middleware message bus into an archival SQL database. 
 
-Also, Peter Rodgers pointed out to me that the PDS / embedded H2 combination is really only intended as a development tool, and certainly would not be recommended for use by NK-PKS in a production environment! 
+Also, Peter Rodgers pointed out to me that the PDSatabase) / embedded H2 combination is really only intended as a development tool, and certainly would not be recommended for use by NK-PKS in a production environment! 
+
+Future work could include implementing a throughput throttle overlay, which would enforce a maximum rate of processed requests, or apply the Throttle Overlay to limit the number of concurrent trade requests being processed and limit the size of the waiting queue.
+
+== Testing Capacity ==
+
+Here, our target is simply to be able to persist up to 20,000 current (ie. with position date >= today) position records in the system.  This is a test of the capacity of the back-end persistence engine (in our case, the embedded H2 database) but also a test for the ability of Netkernel's representation cache to manage a larger number of records, with a combination of in-memory and off-line.
+
+=== Capacity Simulator ===
+First we are going to need to tweak the '''sendrandomtrade''' WWW simulator endpoint so that it will cause the settlement position builder to generate a far larger set of identifiable position records.  This was easily done by changing the single fixed position date with one from a 20,000 - long day range starting from today:
+
+{java}
+dateFormat = new SimpleDateFormat("yyyy-MM-dd")
+
+...
+
+  b.addNode("valueDate",generateRandomDateInRange(start, 20000, random))
+
+...
+
+// Generates a random date, by adding a random number of days between 0 and numDays to the start date
+// Returns a string in format yyyy-mm-dd
+def generateRandomDateInRange(start, numDays, random) {
+	d = start.plus(random.nextInt(numDays))
+	return dateFormat.format(d)
+}
+{/java}
+
+=== Test Execution ===
+
+Using the '''sendMultipleTrades''' WWW endpoint, I started a series of runs at different intervals, and observed the system behaviour during each.
+
+run of 10 trades, spaced by a 1000ms interval.  System worked OK, and positions were generated (verified by using the ''' Display Positions''' button)
+
+4 runs of 10 trades, spaced by 500ms, then 250ms, then 200ms then 100ms, all OK
+
+A run of 100 trades, spaced by 100ms, all OK
+
+A run of 1000 trades, spaced by 100ms, all OK
+
+Then a repeat run of 1000 trades spaced by 100ms caused the system to queue up 10s of locked requests, as seen in the [[http://localhost:1060/tools/kernel | Requests and Threads]] control panel:
+
+{literal}
+3208	SOURCE res:/pks/sendrandomtrade as Object	223925	223925	LONG_WAIT	
+3209	SOURCE res:/pks/sendrandomtrade as Object	223924	223923	LONG_WAIT	
+3210	SOURCE res:/pks/sendrandomtrade as Object	223919	223919	LONG_WAIT	
+...
+
+WorkerThread0	WAITING	3211	SOURCE active:groovy+operator@res%3A/uk/co/rsbatechnology/pks/frontend/updatePositions.groovy+sourceTransaction@pbv%3Aoperand as Object
+Lock name: [java.util.concurrent.CountDownLatch$Sync@5d1f2655] Lock owner: []
+sun.misc.Unsafe.park() line:-2
+java.util.concurrent.locks.LockSupport.park() line:186
+java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt() line:834
+java.util.concurrent.locks.AbstractQueuedSynchronizer.doAcquireSharedInterruptibly() line:994
+java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireSharedInterruptibly() line:1303
+java.util.concurrent.CountDownLatch.await() line:236
+org.netkernel.layer0.nkf.impl.NKFAsyncRequestHandleImpl.join() line:79
+org.netkernel.layer0.nkf.INKFAsyncRequestHandle$join.call() line:-1
+script1403457080694657427971$_run_closure2.doCall() line:41
+sun.reflect.GeneratedMethodAccessor54.invoke() line:-1
+WorkerThread1	WAITING	3215	SOURCE active:groovy+operator@res%3A/uk/co/rsbatechnology/pks/builders/settlementPositionBuilder.groovy+sourceTransaction@pbv%3Aoperand as Object
+Lock name: [java.util.concurrent.CountDownLatch$Sync@7292361e] Lock owner: []
+sun.misc.Unsafe.park() line:-2
+java.util.concurrent.locks.LockSupport.park() line:186
+java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt() line:834
+java.util.concurrent.locks.AbstractQueuedSynchronizer.doAcquireSharedInterruptibly() line:994
+java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireSharedInterruptibly() line:1303
+java.util.concurrent.CountDownLatch.await() line:236
+org.netkernel.layer0.nkf.impl.NKFAsyncRequestHandleImpl.join() line:79
+org.netkernel.layer0.nkf.INKFAsyncRequestHandle$join.call() line:-1
+script14034570810331773121227.run() line:87
+org.netkernel.lang.groovy.endpoint.GroovyRuntime.onRequest() line:37
+{/literal}
+
+It seems that the tasks are getting in some kind of deadlock situation, when there are a larger number of requests being queued up.  
+
+I tried using NetKernel's Deadlock Detector, to at least stop the system freezing up.
+
+{image}/doc/source/img:uk:co:rsbatechnology:pks:diary:part14:deadlockdetector{/image}
+
+When I ran the test,I saw entries in the system console from the deadlock detector, showing it was killing LONG_WAIT Cron jobs, eg:
+
+{literal}
+ <ex>
+  <id>RequestFrameError</id>
+  <request>SOURCE active:groovy+operator@res%3A/uk/co/rsbatechnology/pks/frontend/updatePositions.groovy+sourceTransaction@pbv%3Aoperand as Object</request>
+ </ex>
+ <ex>
+  <id>SubrequestError</id>
+  <space>Lang / Groovy  (private)</space>
+  <endpointId>GroovyRuntime</endpointId>
+  <endpoint>org.netkernel.lang.groovy.endpoint.GroovyRuntime</endpoint>
+  <ex>
+   <id>NetKernelError</id>
+  </ex>
+  <ex>
+   <id>deadlock detector kill</id>
+  </ex>
+ </ex>
+</ex>
+{/literal}
+
+So, what was causing the deadlocks?  I had to go back and review the builder and posting code.  I suspect it was something to do with race conditions between async SINK persistence requests, and subsequent SOURCE requests.
+
+{image}/doc/source/img:uk:co:rsbatechnology:pks:diary:part14:asyncrequests{/image}
+
+Looking at the code closely, the '''settlementPositionBuilder''' endpoint asynchronously SINKs position deltas, and calls <code>join()</code> on the <code>INKFAsyncRequestHandle</code> handlers before sending its own response.  But the code does not set <code>context.setNoResponse()</code> before the Async requests, and therefore the kernel locks the worker thread, waiting for a response, [[doc:physicalreference:response | instead of releasing it]]. 
+
+The '''updatePositions''' endpoint makes the same mistake.  I added a <code>context.setNoResponse</code> statement before the async requests:
+
+{java}
+	INKFRequest postingRequest = context.createRequest("active:positionPosting")
+	postingRequest.addArgument("operand", deltaIdentifier)
+	context.setNoResponse()
+	asyncHandlers << context.issueAsyncRequest(postingRequest)
+{/java}  
+
+I then ran the 100ms * 100 trades test five times, looking at the Requests And Threads page, and saw no locked threads, and no deadlock detection.  The Status Graphs show a summary of the system performance (approx 20:51 to 20:54 in the screenshot below):
+
+{image}/doc/source/img:uk:co:rsbatechnology:pks:diary:part14:statusgraphs{/image}
 
 

@@ -9,4 +9,9 @@
 	    <identifier>active:cronNew</identifier>
 	    <argument name="job">this:cronJobDefinition</argument>
 	</request>
+	<request assignment="response">
+		<!--  Added to force a non-null response from the sendMultipleTrades endpoint to stop
+		HTTPBridge complaining about a null response -->
+	    <identifier>res:/resources/endpoints/sendMultipleTrades.ftl</identifier>
+	</request>	
 </sequence>

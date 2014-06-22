@@ -34,6 +34,7 @@ for (deltaIdentifier in deltaList.getValues("/*")) {
 	// Issue each posting request asynchronously to improve posting performance across threads
 	INKFRequest postingRequest = context.createRequest("active:positionPosting")
 	postingRequest.addArgument("operand", deltaIdentifier)
+	context.setNoResponse()
 	asyncHandlers << context.issueAsyncRequest(postingRequest)
 }
 

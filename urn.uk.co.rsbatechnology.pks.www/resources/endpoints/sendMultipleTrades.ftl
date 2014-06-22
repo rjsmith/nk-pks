@@ -4,6 +4,7 @@
     <request>
       <identifier>res:/pks/sendrandomtrade</identifier>
     </request>
+    <issueMisfiresOnRestart>false</issueMisfiresOnRestart>
     <simple>
       <startTime />
       <endTime />

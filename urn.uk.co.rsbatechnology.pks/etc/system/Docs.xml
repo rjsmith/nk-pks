@@ -112,4 +112,16 @@
 		<uri>res:/doc/diary/part14.txt</uri>
 		<keywords />
 	</doc>
+	<doc>
+		<id>img:uk:co:rsbatechnology:pks:diary:part14:deadlockdetector</id>
+		<uri>res:/doc/diary/part14DeadlockDetector.png</uri>
+	</doc>	
+	<doc>
+		<id>img:uk:co:rsbatechnology:pks:diary:part14:asyncrequests</id>
+		<uri>res:/doc/diary/part14AsyncRequests.png</uri>
+	</doc>	
+	<doc>
+		<id>img:uk:co:rsbatechnology:pks:diary:part14:statusgraphs</id>
+		<uri>res:/doc/diary/part14PerformanceStatusGraphs.png</uri>
+	</doc>	
 </docs>

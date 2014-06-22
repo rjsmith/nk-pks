@@ -2,7 +2,7 @@ import org.netkernel.layer0.nkf.INKFResponse
 import org.netkernel.layer0.representation.IHDSNode
 import org.netkernel.layer0.representation.impl.HDSBuilder
 import java.util.UUID
-
+import java.text.SimpleDateFormat
 
 // Generate source FX transaction
 // Randomises some trade attributes
@@ -16,7 +16,7 @@ cptyUUIDs = ["b6a563a6-d82b-4b96-9b17-300c95e5d4f2",
 baseccys = ["USD", "EUR", "GBP", "AUD"]
 termccys = ["JPY", "SGD", "HKD", "CAD"]
 cptyBuysBase = ["true", "false"]
-
+dateFormat = new SimpleDateFormat("yyyy-MM-dd")
 
 (trade, transactionID) = generateFXTrade()
 request.addArgumentByValue("operand", trade)
@@ -28,7 +28,8 @@ response.setExpiry(INKFResponse.EXPIRY_ALWAYS) // Force NK to always call this e
 def generateFXTrade() {
 	HDSBuilder b
 	b = new HDSBuilder()
-	def random = new Random();
+	def random = new Random()
+	def start = new Date().clearTime()
 	
 	transactionID = UUID.randomUUID().toString()
 	b.pushNode("trade")
@@ -55,10 +56,16 @@ def generateFXTrade() {
 	b.addNode("settlementAmountUSD", random.nextInt(10000)+".00")
 	b.popNode()
 	b.addNode("counterpartyBuysBase", cptyBuysBase[random.nextInt(cptyBuysBase.size())])
-	b.addNode("valueDate","2014-05-19")
+	b.addNode("valueDate",generateRandomDateInRange(start, 20000, random))
 	return [b.getRoot(), transactionID]
 }
 
+// Generates a random date, by adding a random number of days between 0 and numDays to the start date
+// Returns a string in format yyyy-mm-dd
+def generateRandomDateInRange(start, numDays, random) {
+	d = start.plus(random.nextInt(numDays))
+	return dateFormat.format(d)
+}
 
 /*
  * 					<trade>
