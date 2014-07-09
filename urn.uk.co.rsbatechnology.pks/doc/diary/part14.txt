@@ -272,4 +272,32 @@ I then ran the 100ms * 100 trades test five times, looking at the Requests And T
 
 {image}/doc/source/img:uk:co:rsbatechnology:pks:diary:part14:statusgraphs{/image}
 
+== Profile Overlay ==
 
+I later came across the documentation of the [[doc:mod:architecture:profile | Profile Overlay]], which is part of the [[doc:mod:architecture:title | NKEE Enterprise Architectural Components]] module.  This is a simple way to add always-on monitoring statistics for requests following into a Space.
+
+Following the docs, I wrapped the PKS Front End rootspace in the <code>ProfileOverlay</code> prototype:
+
+{xml}
+	<rootspace name="PKS Front-end Rootspace" uri="urn:uk:co:rsbatechnology:pks:frontend"
+		public="true">
+		<overlay>
+			<prototype>mod.architecture.ProfileOverlay</prototype>
+			<space>
+				<mapper>
+				...
+								</mapper>
+			</space>
+		</overlay>
+  		<!--  For ProfileOverlay -->
+		<import>
+			<uri>urn:com:ten60:netkernel:mod:architecture</uri>
+		</import>
+	</rootspace>
+{/xml}
+
+Running some test transactions through the PKS WWW simulator, I could then see some request statistics in the overlay's page in the explorer:
+
+{image}/doc/source/img:uk:co:rsbatechnology:pks:diary:part14:profileoverlay{/image}
+
+P

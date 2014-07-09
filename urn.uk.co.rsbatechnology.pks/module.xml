@@ -18,36 +18,46 @@
 	</rootspace>
 	<rootspace name="PKS Front-end Rootspace" uri="urn:uk:co:rsbatechnology:pks:frontend"
 		public="true">
-		<mapper>
-			<config>
-				<import>res:/uk/co/rsbatechnology/pks/frontendMapperConfig.xml</import>
-			</config>
+		<overlay>
+			<prototype>mod.architecture.ProfileOverlay</prototype>
 			<space>
-				<import><uri>urn:uk:co:rsbatechnology:pks:posting</uri></import>
-				<import><uri>urn:uk:co:rsbatechnology:pks:position</uri></import>
-				<import><uri>urn:uk:co:rsbatechnology:pks:delta</uri></import>
-				<!-- Set dynamicimports space import to private to stop FrondEndFulcrum dynamic import from
-						parsing all of these dynamic imports again -->
-				<import>
-					<uri>urn:uk:co:rsbatechnology:pks:frontend:dynamicimports</uri>
-					<private />
-				</import>
-				<!-- Other imports -->
-				<fileset>
-					<regex>res:/uk/co/rsbatechnology/pks/.*</regex>
-				</fileset>
-				<import>
-					<uri>urn:org:netkernel:lang:dpml</uri>
-				</import>
-				<!-- Enables active:groovy to be resolvable -->
-				<import><uri>urn:org:netkernel:lang:groovy</uri></import>
-				<!-- Enables active:userMetaAggregator -->
-				<import>
-  					<uri>urn:org:netkernel:ext:system</uri>
-  				</import>
+				<mapper>
+					<config>
+						<import>res:/uk/co/rsbatechnology/pks/frontendMapperConfig.xml</import>
+					</config>
+					<space>
+						<import><uri>urn:uk:co:rsbatechnology:pks:posting</uri></import>
+						<import><uri>urn:uk:co:rsbatechnology:pks:position</uri></import>
+						<import><uri>urn:uk:co:rsbatechnology:pks:delta</uri></import>
+						<!-- Set dynamicimports space import to private to stop FrondEndFulcrum dynamic import from
+								parsing all of these dynamic imports again -->
+						<import>
+							<uri>urn:uk:co:rsbatechnology:pks:frontend:dynamicimports</uri>
+							<private />
+						</import>
+						<!-- Other imports -->
+						<fileset>
+							<regex>res:/uk/co/rsbatechnology/pks/.*</regex>
+						</fileset>
+						<import>
+							<uri>urn:org:netkernel:lang:dpml</uri>
+						</import>
+						<!-- Enables active:groovy to be resolvable -->
+						<import><uri>urn:org:netkernel:lang:groovy</uri></import>
+						<!-- Enables active:userMetaAggregator -->
+						<import>
+		  					<uri>urn:org:netkernel:ext:system</uri>
+		  				</import>
+					</space>
+				</mapper>
 			</space>
-		</mapper>
+		</overlay>
+  		<!--  For ProfileOverlay -->
+		<import>
+			<uri>urn:com:ten60:netkernel:mod:architecture</uri>
+		</import>		
 	</rootspace>
+	
 	<rootspace name="PKS Front-end Dynamic Import" uri="urn:uk:co:rsbatechnology:pks:frontend:dynamicimports"
 		public = "false">
 		<!-- instantiate the dynamic import referencing the import discovery service -->

@@ -124,4 +124,8 @@
 		<id>img:uk:co:rsbatechnology:pks:diary:part14:statusgraphs</id>
 		<uri>res:/doc/diary/part14PerformanceStatusGraphs.png</uri>
 	</doc>	
+	<doc>
+		<id>img:uk:co:rsbatechnology:pks:diary:part14:profileoverlay</id>
+		<uri>res:/doc/diary/part14ProfileOverlay.png</uri>
+	</doc>	
 </docs>
